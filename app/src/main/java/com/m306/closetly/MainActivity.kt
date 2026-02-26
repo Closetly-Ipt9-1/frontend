@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.google.firebase.FirebaseApp
+import com.m306.closetly.auth.ui.LoginScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -13,6 +14,7 @@ class MainActivity : ComponentActivity() {
         val app = FirebaseApp.initializeApp(this)
 
         setContent {
+            LoginScreen()
         }
     }
 }
