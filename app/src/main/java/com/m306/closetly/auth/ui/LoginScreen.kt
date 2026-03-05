@@ -20,7 +20,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 
 
 @Composable
-fun LoginScreen(){
+fun LoginScreen(onLoginSuccess: () -> Unit){
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val isPreview = LocalInspectionMode.current
@@ -63,11 +63,26 @@ fun LoginScreen(){
             singleLine = true,
 
             )
-        ElevatedButton(onClick = { if(isEmailVal(email)) {
-            loginFunc?.login(email.trim(), password)} else {
-            Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
-        }
-        }) {
+        ElevatedButton(
+            onClick = {
+                if (!isEmailVal(email)) {
+                    Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
+                    return@ElevatedButton
+                }
+
+                loginFunc?.login(
+                    email = email.trim(),
+                    password = password,
+                    onSuccess = {
+                        Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                        onLoginSuccess()
+                    },
+                    onError = {
+                        Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        ) {
             Text("Login")
         }
     }
@@ -81,5 +96,5 @@ fun isEmailVal(email: String): Boolean {
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview(){
-        LoginScreen()
+    LoginScreen(onLoginSuccess = {})
 }
