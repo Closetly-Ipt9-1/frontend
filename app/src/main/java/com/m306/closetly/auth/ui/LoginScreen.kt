@@ -20,7 +20,9 @@ import androidx.compose.ui.platform.LocalInspectionMode
 
 
 @Composable
-fun LoginScreen(){
+fun LoginScreen(
+    onNavigateToRegister: () -> Unit,
+){
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val isPreview = LocalInspectionMode.current
@@ -28,9 +30,10 @@ fun LoginScreen(){
     val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
 
+
     Column (horizontalAlignment = Alignment.CenterHorizontally){
 
-        Text("Login")
+        Text("Welcome back")
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -63,6 +66,12 @@ fun LoginScreen(){
             singleLine = true,
 
             )
+        TextButton(onClick = onNavigateToRegister){
+            Text(
+                text="Don't have an account? Create one now!",
+                )
+        }
+
         ElevatedButton(onClick = { if(isEmailVal(email)) {
             loginFunc?.login(email.trim(), password)} else {
             Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
@@ -81,5 +90,7 @@ fun isEmailVal(email: String): Boolean {
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview(){
-        LoginScreen()
+        LoginScreen(
+            onNavigateToRegister = {}
+        )
 }

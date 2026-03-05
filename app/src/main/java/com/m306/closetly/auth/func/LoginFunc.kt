@@ -10,6 +10,7 @@ class LoginFunc (private val auth: FirebaseAuth = FirebaseAuth.getInstance()) {
             .addOnCompleteListener() { task ->
                 if (task.isSuccessful) {
                     Log.d(TAG, "signInWithEmail:success")
+
                     val user = auth.currentUser
                 } else {
                     Log.w(TAG, "signInWithEmail:failure", task.exception)

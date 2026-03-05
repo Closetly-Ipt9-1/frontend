@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.m306.closetly.auth.ui.LoginScreen
 import com.m306.closetly.home.ui.HomeScreen
+import com.m306.closetly.auth.ui.RegisterScreen
 
 @Composable
 fun ClosetlyApp() {
@@ -19,17 +20,26 @@ fun ClosetlyApp() {
 
         composable(Routes.LOGIN) {
             LoginScreen(
-                onLoginSuccess = {
+                /*onLoginSuccess = {
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                         launchSingleTop = true
                     }
+                }*/
+                onNavigateToRegister = {
+                    navController.navigate(Routes.REGISTER)
                 }
             )
         }
 
         composable(Routes.HOME) {
             HomeScreen()
+        }
+
+        composable(Routes.REGISTER){
+            RegisterScreen(
+
+            )
         }
     }
 }

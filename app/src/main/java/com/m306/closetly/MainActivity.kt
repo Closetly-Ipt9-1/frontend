@@ -14,7 +14,9 @@ class MainActivity : ComponentActivity() {
         val app = FirebaseApp.initializeApp(this)
 
         setContent {
-            LoginScreen()
+            LoginScreen(
+                onNavigateToRegister = {}
+            )
         }
     }
 }
