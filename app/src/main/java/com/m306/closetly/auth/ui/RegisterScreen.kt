@@ -132,17 +132,17 @@ fun RegisterScreen(
 
         ElevatedButton(
             onClick = {
-                if(password==passwordconfirm){
+                if(password.trim()==passwordconfirm.trim()){
                 if (!isEmailVal(email)) {
                     Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
                     return@ElevatedButton
                 }
 
                 registerFunc?.register(
-                    name = name,
-                    username = username,
+                    name = name.trim(),
+                    username = username.trim(),
                     email = email.trim(),
-                    password = password,
+                    password = password.trim(),
                     onSuccess = {
                         Toast.makeText(context, "Registration successful", Toast.LENGTH_SHORT).show()
                         onRegisterSuccess()
