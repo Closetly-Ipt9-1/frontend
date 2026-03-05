@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
+    onLoginSuccess: () -> Unit,
 ){
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -30,10 +31,9 @@ fun LoginScreen(
     val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
 
-
     Column (horizontalAlignment = Alignment.CenterHorizontally){
 
-        Text("Welcome back")
+        Text("Login")
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -72,11 +72,26 @@ fun LoginScreen(
                 )
         }
 
-        ElevatedButton(onClick = { if(isEmailVal(email)) {
-            loginFunc?.login(email.trim(), password)} else {
-            Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
-        }
-        }) {
+        ElevatedButton(
+            onClick = {
+                if (!isEmailVal(email)) {
+                    Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
+                    return@ElevatedButton
+                }
+
+                loginFunc?.login(
+                    email = email.trim(),
+                    password = password,
+                    onSuccess = {
+                        Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                        onLoginSuccess()
+                    },
+                    onError = {
+                        Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        ) {
             Text("Login")
         }
     }
@@ -91,6 +106,7 @@ fun isEmailVal(email: String): Boolean {
 @Composable
 fun LoginScreenPreview(){
         LoginScreen(
-            onNavigateToRegister = {}
+            onNavigateToRegister = {} ,
+            onLoginSuccess = {}
         )
 }

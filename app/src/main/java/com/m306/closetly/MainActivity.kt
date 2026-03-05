@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.google.firebase.FirebaseApp
 import com.m306.closetly.auth.ui.LoginScreen
+import com.m306.closetly.navigation.ClosetlyApp
 
 
 class MainActivity : ComponentActivity() {
@@ -14,9 +15,7 @@ class MainActivity : ComponentActivity() {
         val app = FirebaseApp.initializeApp(this)
 
         setContent {
-            LoginScreen(
-                onNavigateToRegister = {}
-            )
+            ClosetlyApp()
         }
     }
 }
