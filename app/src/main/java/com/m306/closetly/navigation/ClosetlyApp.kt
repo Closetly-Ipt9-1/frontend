@@ -20,12 +20,12 @@ fun ClosetlyApp() {
 
         composable(Routes.LOGIN) {
             LoginScreen(
-                /*onLoginSuccess = {
+                onLoginSuccess = {
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                         launchSingleTop = true
                     }
-                }*/
+                },
                 onNavigateToRegister = {
                     navController.navigate(Routes.REGISTER)
                 }
@@ -38,7 +38,12 @@ fun ClosetlyApp() {
 
         composable(Routes.REGISTER){
             RegisterScreen(
-
+                onNavigateToLogin = {
+                    navController.navigate(Routes.LOGIN)
+                },
+                onRegisterSuccess = {
+                    navController.navigate(Routes.LOGIN)
+                },
             )
         }
     }
