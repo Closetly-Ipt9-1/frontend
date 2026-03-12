@@ -7,15 +7,24 @@ import androidx.navigation.compose.rememberNavController
 import com.m306.closetly.auth.ui.LoginScreen
 import com.m306.closetly.home.ui.HomeScreen
 import com.m306.closetly.auth.ui.RegisterScreen
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun ClosetlyApp() {
 
     val navController = rememberNavController()
+    val user = FirebaseAuth.getInstance().currentUser
+    val startdestination = if (user != null) {
+        Routes.HOME
+    } else {
+        Routes.LOGIN
+    }
+
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN
+        startDestination = startdestination
+
     ) {
 
         composable(Routes.LOGIN) {
