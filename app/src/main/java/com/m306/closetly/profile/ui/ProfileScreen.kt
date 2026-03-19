@@ -40,6 +40,7 @@ import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 
 @Composable
 fun ProfileScreen(
@@ -49,7 +50,7 @@ fun ProfileScreen(
     val storage = FirebaseStorage.getInstance()
     val user = auth.currentUser
 
-    var photoUrl by remember(user?.photoUrl) {
+    var photoUrl: String? by remember(user?.photoUrl) {
         mutableStateOf(user?.photoUrl?.toString())
     }
     var isUploading by remember { mutableStateOf(false) }
@@ -63,11 +64,14 @@ fun ProfileScreen(
             return@rememberLauncherForActivityResult
         }
 
+        val userId = auth.currentUser?.uid
+
         isUploading = true
 
+        val fileName = UUID.randomUUID().toString()
+
         val imageRef = storage.reference
-            .child("profile_pictures")
-            .child("${currentUser.uid}.jpg")
+            .child("users/$userId/profile_pictures/$fileName.jpg")
 
         imageRef.putFile(selectedImageUri)
             .addOnSuccessListener {
