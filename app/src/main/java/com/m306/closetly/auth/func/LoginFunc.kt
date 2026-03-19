@@ -18,7 +18,6 @@ class LoginFunc(
                 if (task.isSuccessful) {
                     Log.d(TAG, "signInWithEmail:success")
                     onSuccess()
-
                 } else {
                     Log.w(TAG, "signInWithEmail:failure", task.exception)
                     onError(task.exception)

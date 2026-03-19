@@ -20,6 +20,8 @@ import com.m306.closetly.closet.ui.ClosetScreen
 import com.m306.closetly.explore.ui.ExploreScreen
 import com.m306.closetly.fitcreator.ui.FitCreatorScreen
 import com.m306.closetly.profile.ui.ProfileScreen
+import com.m306.closetly.auth.func.AuthManager
+
 
 @Composable
 fun ClosetlyApp() {
@@ -40,6 +42,9 @@ fun ClosetlyApp() {
         Routes.CLOSET,
         Routes.PROFILE
     )
+    val startDestination =
+        if (AuthManager.getCurrentUserId() != null) Routes.EXPLORE else Routes.LOGIN
+
 
     Scaffold(
         bottomBar = {
@@ -78,7 +83,7 @@ fun ClosetlyApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.LOGIN,
+            startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.LOGIN) {
