@@ -13,7 +13,7 @@ class LoginFunc(
         onSuccess: () -> Unit,
         onError: (Throwable?) -> Unit
     ) {
-        auth.signInWithEmailAndPassword(email, password)
+        auth.signInWithEmailAndPassword(email.trim(), password.trim())
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     Log.d(TAG, "signInWithEmail:success")

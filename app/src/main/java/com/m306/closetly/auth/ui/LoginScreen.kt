@@ -94,6 +94,26 @@ fun LoginScreen(
         ) {
             Text("Login")
         }
+
+        ElevatedButton(
+            onClick = {
+
+                loginFunc?.login(
+                    email = "timonsoom@gmail.com",
+                    password = "Timon2008",
+                    onSuccess = {
+                        Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                        onLoginSuccess()
+                    },
+                    onError = {
+                        Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        ) {
+            Text("Test Login")
+        }
+
     }
 }
 
