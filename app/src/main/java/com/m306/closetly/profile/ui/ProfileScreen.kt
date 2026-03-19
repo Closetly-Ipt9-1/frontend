@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Edit
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -43,6 +44,7 @@ import com.google.firebase.storage.FirebaseStorage
 
 @Composable
 fun ProfileScreen(
+    onEditClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     val auth = FirebaseAuth.getInstance()
@@ -186,6 +188,20 @@ fun ProfileScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onEditClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Edit profile"
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Editieren")
+        }
+        
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
