@@ -199,7 +199,8 @@ fun EditProfileScreen(
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = !isSaving
-        ) {
+        ) 
+        {
             Text("Speichern")
         }
 
