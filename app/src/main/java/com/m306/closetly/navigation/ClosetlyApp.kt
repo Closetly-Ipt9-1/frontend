@@ -20,6 +20,7 @@ import com.m306.closetly.closet.ui.ClosetScreen
 import com.m306.closetly.explore.ui.ExploreScreen
 import com.m306.closetly.fitcreator.ui.FitCreatorScreen
 import com.m306.closetly.profile.ui.ProfileScreen
+import com.m306.closetly.profile.ui.EditProfileScreen
 import com.m306.closetly.auth.func.AuthManager
 
 
@@ -133,12 +134,28 @@ fun ClosetlyApp() {
 
             composable(Routes.PROFILE) {
                 ProfileScreen(
+                    onEditClick = {
+                        navController.navigate(Routes.EDIT_PROFILE) {
+                            launchSingleTop = true
+                        }
+                    },
                     onLogoutClick = {
                         com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }
+                    }
+                )
+            }
+
+            composable(Routes.EDIT_PROFILE) {
+                EditProfileScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onSaveSuccess = {
+                        navController.popBackStack()
                     }
                 )
             }

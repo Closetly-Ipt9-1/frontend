@@ -7,4 +7,5 @@ object Routes {
     const val FIT_CREATOR = "fit_creator"
     const val CLOSET = "closet"
     const val PROFILE = "profile"
+    const val EDIT_PROFILE = "edit_profile"
 }
