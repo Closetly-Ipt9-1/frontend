@@ -52,7 +52,8 @@ import java.util.UUID
 @Composable
 fun ProfileScreen(
     onEditClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onSavedOutfitsClick: () -> Unit
 ) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
@@ -231,6 +232,15 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        Button(
+            onClick = onSavedOutfitsClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Saved Outfits")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        
         Button(
             onClick = onLogoutClick,
             modifier = Modifier.fillMaxWidth()

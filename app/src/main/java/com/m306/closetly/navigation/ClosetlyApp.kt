@@ -22,6 +22,7 @@ import com.m306.closetly.fitcreator.ui.FitCreatorScreen
 import com.m306.closetly.profile.ui.ProfileScreen
 import com.m306.closetly.profile.ui.EditProfileScreen
 import com.m306.closetly.auth.func.AuthManager
+import com.m306.closetly.profile.ui.SavedOutfitsScreen
 
 
 @Composable
@@ -139,6 +140,11 @@ fun ClosetlyApp() {
                             launchSingleTop = true
                         }
                     },
+                    onSavedOutfitsClick = {
+                        navController.navigate(Routes.SAVED_OUTFITS) {
+                            launchSingleTop = true
+                        }
+                    },
                     onLogoutClick = {
                         com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
                         navController.navigate(Routes.LOGIN) {
@@ -158,6 +164,10 @@ fun ClosetlyApp() {
                         navController.popBackStack()
                     }
                 )
+            }
+
+            composable(Routes.SAVED_OUTFITS) {
+                SavedOutfitsScreen()
             }
         }
     }
