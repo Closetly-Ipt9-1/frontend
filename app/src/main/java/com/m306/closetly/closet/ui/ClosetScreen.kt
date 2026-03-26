@@ -3,154 +3,411 @@ package com.m306.closetly.closet.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.m306.closetly.closet.func.Images
+import com.m306.closetly.closet.model.ClothingItemUi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import com.m306.closetly.closet.func.getColorFromName
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClosetScreen() {
-    val images = Images()
-    var isBusy by remember { mutableStateOf(false) }
+
+    val viewModel: ClosetViewModel = viewModel()
+
+    val clothes by viewModel.clothes.collectAsState()
+    val filteredClothes by viewModel.filteredClothes.collectAsState()
+    val isBusy by viewModel.isBusy.collectAsState()
+    val message by viewModel.message.collectAsState()
+
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val selectedColor by viewModel.selectedColor.collectAsState()
+    val selectedBrand by viewModel.selectedBrand.collectAsState()
+    val selectedSize by viewModel.selectedSize.collectAsState()
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var uploadMessage by remember { mutableStateOf<String?>(null) }
+    var category by remember { mutableStateOf("") }
+    var color by remember { mutableStateOf("") }
+    var brand by remember { mutableStateOf("") }
+    var size by remember { mutableStateOf("") }
+
+    val categoryOptions = listOf("Jacket", "Pants", "Pullover", "Shirt", "Shoes", "Watch")
+    val colorOptions = listOf("Black", "White", "Blue", "Red", "Green", "Gray", "Beige", "Yellow", "Orange", "Violet", "Purple")
+    val brandOptions = listOf("Nike", "Adidas", "Zara", "H&M", "Puma", "Levi's", "Ralph Lauren", "Jack&Jones", "Louis Vuitton", "Gucci", "Prada")
+    val sizeOptions = listOf("XS", "S", "M", "L", "XL", "XXL")
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
+        ActivityResultContracts.GetContent()
+    ) { uri ->
         selectedImageUri = uri
-        uploadMessage = null
     }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .navigationBarsPadding(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Closet", style = MaterialTheme.typography.headlineLarge)
-        Text("Your wardrobe items", style = MaterialTheme.typography.bodyLarge)
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (selectedImageUri == null) {
-            Button(
-                onClick = {
-                    launcher.launch("image/*")
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.height(0.dp))
-                Text("Chose image")
+        item(key = "choose_button") {
+            Button(onClick = { launcher.launch("image/*") }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Choose Image")
             }
-        } else {
-            Text(
-                text = "Preview",
-                style = MaterialTheme.typography.titleMedium
-            )
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        if (selectedImageUri != null) {
+            item(key = "upload_form") {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AsyncImage(
+                        model = selectedImageUri,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentScale = ContentScale.Crop
+                    )
 
-            Card(
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                AsyncImage(
-                    model = selectedImageUri,
-                    contentDescription = "Preview",
-                    modifier = Modifier
-                        .size(250.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
+                    DropdownSelector(
+                        label = "Category",
+                        options = categoryOptions,
+                        selectedValue = category,
+                        onValueSelected = { category = it }
+                    )
 
-            Spacer(modifier = Modifier.height(20.dp))
+                    DropdownSelector(
+                        label = "Color",
+                        options = colorOptions,
+                        selectedValue = color,
+                        onValueSelected = { color = it }
+                    )
 
-            Button(
-                enabled = !isBusy,
-                onClick = {
-                    isBusy = true
-                    val uri = selectedImageUri
-                    if (uri != null) {
-                        images.uploadClothes(
-                            imageUri = uri,
-                            onSuccess = { url ->
-                                selectedImageUri = null
-                                isBusy = false
+                    DropdownSelector(
+                        label = "Brand",
+                        options = brandOptions,
+                        selectedValue = brand,
+                        onValueSelected = { brand = it }
+                    )
 
-                            },
-                            onError = { error ->
-                                uploadMessage = "Error: ${error.message}"
-                                isBusy = false
+                    DropdownSelector(
+                        label = "Size",
+                        options = sizeOptions,
+                        selectedValue = size,
+                        onValueSelected = { size = it }
+                    )
 
-                            }
-                        )
+                    Button(
+                        enabled = !isBusy &&
+                                category.isNotBlank() &&
+                                color.isNotBlank() &&
+                                brand.isNotBlank() &&
+                                size.isNotBlank(),
+                        onClick = {
+                            val image = selectedImageUri ?: return@Button
+
+                            val savedCategory = category
+                            val savedColor = color
+                            val savedBrand = brand
+                            val savedSize = size
+
+                            viewModel.saveClothingItem(
+                                imageUri = image,
+                                category = savedCategory,
+                                color = savedColor,
+                                brand = savedBrand,
+                                size = savedSize
+                            )
+
+                            selectedImageUri = null
+                            category = ""
+                            color = ""
+                            brand = ""
+                            size = ""
+                        }
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Save")
+                    }
+
+                    OutlinedButton(onClick = {
+                        selectedImageUri = null
+                        category = ""
+                        color = ""
+                        brand = ""
+                        size = ""
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Cancel")
                     }
                 }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null
-                )
-                Text("Accept")
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                enabled = !isBusy,
-                onClick = {
-                    selectedImageUri = null
-                }
+        item(key = "filters") {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = null
+                Text("Filters", style = MaterialTheme.typography.titleMedium)
+
+                FilterDropdown(
+                    label = "Category",
+                    options = categoryOptions,
+                    selectedValue = selectedCategory,
+                    onValueSelected = { viewModel.setSelectedCategory(it) },
+                    modifier = Modifier.weight(1f)
                 )
-                Text("Cancel")
+
+                FilterDropdown(
+                    label = "Color",
+                    options = colorOptions,
+                    selectedValue = selectedColor,
+                    onValueSelected = { viewModel.setSelectedColor(it) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                FilterDropdown(
+                    label = "Brand",
+                    options = brandOptions,
+                    selectedValue = selectedBrand,
+                    onValueSelected = { viewModel.setSelectedBrand(it) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                FilterDropdown(
+                    label = "Size",
+                    options = sizeOptions,
+                    selectedValue = selectedSize,
+                    onValueSelected = { viewModel.setSelectedSize(it) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                OutlinedButton(onClick = { viewModel.clearFilters() }) {
+                    Text("Clear Filters")
+                }
             }
         }
 
 
+        items(
+            items = filteredClothes,
+            key = { it.id }
+        ) { item ->
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    AsyncImage(
+                        model = item.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
 
+        item(key = "bottom_space") {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 }
 
-@Preview(showBackground = true)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClosetScreenPreview() {
-    ClosetScreen()
+fun DropdownSelector(
+    label: String,
+    options: List<String>,
+    selectedValue: String,
+    onValueSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val isColorSelector = label == "Color"
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = selectedValue,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            trailingIcon = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isColorSelector && selectedValue.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = getColorFromName(selectedValue),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                }
+            }
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        if (isColorSelector) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .background(
+                                            color = getColorFromName(option),
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                        .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(option)
+                            }
+                        } else {
+                            Text(option)
+                        }
+                    },
+                    onClick = {
+                        onValueSelected(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterDropdown(
+    label: String,
+    options: List<String>,
+    selectedValue: String?,
+    onValueSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val isColorFilter = label == "Color"
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = selectedValue ?: "All",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            modifier = modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            trailingIcon = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isColorFilter && selectedValue != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = getColorFromName(selectedValue),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                }
+            }
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("All") },
+                onClick = {
+                    onValueSelected(null)
+                    expanded = false
+                }
+            )
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        if (isColorFilter) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .background(
+                                            color = getColorFromName(option),
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                        .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(option)
+                            }
+                        } else {
+                            Text(option)
+                        }
+                    },
+                    onClick = {
+                        onValueSelected(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }
