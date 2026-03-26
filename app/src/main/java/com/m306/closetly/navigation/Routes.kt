@@ -8,4 +8,5 @@ object Routes {
     const val CLOSET = "closet"
     const val PROFILE = "profile"
     const val EDIT_PROFILE = "edit_profile"
+    const val SAVED_OUTFITS = "saved_outfits"
 }
