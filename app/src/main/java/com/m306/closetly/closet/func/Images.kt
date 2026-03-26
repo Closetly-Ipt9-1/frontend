@@ -10,7 +10,7 @@ class Images {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    fun uploadClothes(
+    fun uploadClothesImage(
         imageUri: Uri,
         onSuccess: (String) -> Unit,
         onError: (Exception) -> Unit
@@ -23,8 +23,7 @@ class Images {
         }
 
         val fileName = UUID.randomUUID().toString()
-        val ref = storage.reference
-            .child("users/$userId/clothes/$fileName.jpg")
+        val ref = storage.reference.child("users/$userId/clothes/$fileName.jpg")
 
         ref.putFile(imageUri)
             .addOnSuccessListener {
