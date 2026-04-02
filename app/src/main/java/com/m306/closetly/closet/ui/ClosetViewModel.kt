@@ -4,9 +4,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.m306.closetly.closet.data.ClosetRepository
-import com.m306.closetly.closet.model.ClothingItem
+import com.m306.closetly.closet.model.ClothingItemUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
@@ -14,7 +15,8 @@ class ClosetViewModel : ViewModel() {
 
     private val repository = ClosetRepository()
 
-    private val _clothingItems = MutableStateFlow<List<ClothingItem>>(emptyList())
+    private val _clothes = MutableStateFlow<List<ClothingItemUi>>(emptyList())
+    val clothes: StateFlow<List<ClothingItemUi>> = _clothes
 
     private val _isBusy = MutableStateFlow(false)
     val isBusy: StateFlow<Boolean> = _isBusy
@@ -22,7 +24,6 @@ class ClosetViewModel : ViewModel() {
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
-    // Filter states
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory
 
@@ -35,10 +36,14 @@ class ClosetViewModel : ViewModel() {
     private val _selectedSize = MutableStateFlow<String?>(null)
     val selectedSize: StateFlow<String?> = _selectedSize
 
-    val filteredClothes: StateFlow<List<ClothingItem>> = combine(
-        _clothingItems, _selectedCategory, _selectedColor, _selectedBrand, _selectedSize
-    ) { items, category, color, brand, size ->
-        items.filter { item ->
+    val filteredClothes: StateFlow<List<ClothingItemUi>> = combine(
+        _clothes,
+        _selectedCategory,
+        _selectedColor,
+        _selectedBrand,
+        _selectedSize
+    ) { clothes, category, color, brand, size ->
+        clothes.filter { item ->
             (category == null || item.category == category) &&
             (color == null || item.color == color) &&
             (brand == null || item.brand == brand) &&
@@ -46,7 +51,7 @@ class ClosetViewModel : ViewModel() {
         }
     }.stateIn(
         scope = viewModelScope,
-        started = kotlinx.coroutines.flow.SharingStarted.Lazily,
+        started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
 
@@ -56,7 +61,7 @@ class ClosetViewModel : ViewModel() {
 
     fun loadClothes() {
         repository.getClothingItems(
-            onSuccess = { _clothingItems.value = it },
+            onSuccess = { _clothes.value = it },
             onError = { _message.value = it.message ?: "Error" }
         )
     }
@@ -78,7 +83,7 @@ class ClosetViewModel : ViewModel() {
             brand = brand,
             size = size,
             onSuccess = { newItem ->
-                _clothingItems.value = listOf(newItem) + _clothingItems.value
+                _clothes.value = listOf(newItem) + _clothes.value
                 _isBusy.value = false
                 _message.value = "Saved!"
             },
@@ -91,10 +96,12 @@ class ClosetViewModel : ViewModel() {
 
     fun deleteClothingItem(itemId: String) {
         _isBusy.value = true
+        _message.value = ""
+
         repository.deleteClothingItem(
             itemId = itemId,
             onSuccess = {
-                _clothingItems.value = _clothingItems.value.filter { it.id != itemId }
+                _clothes.value = _clothes.value.filter { it.id != itemId }
                 _isBusy.value = false
                 _message.value = "Deleted!"
             },
@@ -113,6 +120,8 @@ class ClosetViewModel : ViewModel() {
         size: String
     ) {
         _isBusy.value = true
+        _message.value = ""
+
         repository.updateClothingItem(
             itemId = itemId,
             category = category,
@@ -120,7 +129,7 @@ class ClosetViewModel : ViewModel() {
             brand = brand,
             size = size,
             onSuccess = { updatedItem ->
-                _clothingItems.value = _clothingItems.value.map {
+                _clothes.value = _clothes.value.map {
                     if (it.id == itemId) updatedItem else it
                 }
                 _isBusy.value = false
@@ -156,6 +165,3 @@ class ClosetViewModel : ViewModel() {
         _selectedSize.value = null
     }
 }
-
-
-

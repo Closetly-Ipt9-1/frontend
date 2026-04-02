@@ -3,6 +3,8 @@ package com.m306.closetly.closet.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,26 +13,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.m306.closetly.closet.model.ClothingItem
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
+import com.m306.closetly.closet.func.getColorFromName
+import com.m306.closetly.closet.model.ClothingItemUi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClosetScreen() {
-
     val viewModel: ClosetViewModel = viewModel()
 
     val filteredClothes by viewModel.filteredClothes.collectAsState()
@@ -77,52 +77,6 @@ fun ClosetScreen() {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Choose Image")
-            }
-        }
-
-        item(key = "filters") {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Filters", style = MaterialTheme.typography.titleMedium)
-                FilterDropdown(
-                    label = "Category",
-                    options = categoryOptions,
-                    selectedValue = selectedCategory,
-                    onValueSelected = { viewModel.setSelectedCategory(it) },
-                    modifier = Modifier.weight(1f)
-                )
-
-                FilterDropdown(
-                    label = "Color",
-                    options = colorOptions,
-                    selectedValue = selectedColor,
-                    onValueSelected = { viewModel.setSelectedColor(it) },
-                    modifier = Modifier.weight(1f)
-                )
-
-
-
-                FilterDropdown(
-                    label = "Brand",
-                    options = brandOptions,
-                    selectedValue = selectedBrand,
-                    onValueSelected = { viewModel.setSelectedBrand(it) },
-                    modifier = Modifier.weight(1f)
-                )
-
-                FilterDropdown(
-                    label = "Size",
-                    options = sizeOptions,
-                    selectedValue = selectedSize,
-                    onValueSelected = { viewModel.setSelectedSize(it) },
-                    modifier = Modifier.weight(1f)
-                )
-
-
-                OutlinedButton(onClick = { viewModel.clearFilters() }) {
-                    Text("Clear Filters")
-                }
             }
         }
 
@@ -177,17 +131,12 @@ fun ClosetScreen() {
                         onClick = {
                             val image = selectedImageUri ?: return@Button
 
-                            val savedCategory = category
-                            val savedColor = color
-                            val savedBrand = brand
-                            val savedSize = size
-
                             viewModel.saveClothingItem(
                                 imageUri = image,
-                                category = savedCategory,
-                                color = savedColor,
-                                brand = savedBrand,
-                                size = savedSize
+                                category = category,
+                                color = color,
+                                brand = brand,
+                                size = size
                             )
 
                             selectedImageUri = null
@@ -202,17 +151,59 @@ fun ClosetScreen() {
                         Text("Save")
                     }
 
-                    OutlinedButton(onClick = {
-                        selectedImageUri = null
-                        category = ""
-                        color = ""
-                        brand = ""
-                        size = ""
-                    }) {
+                    OutlinedButton(
+                        onClick = {
+                            selectedImageUri = null
+                            category = ""
+                            color = ""
+                            brand = ""
+                            size = ""
+                        }
+                    ) {
                         Icon(Icons.Default.Close, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Cancel")
                     }
+                }
+            }
+        }
+
+        item(key = "filters") {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Filters", style = MaterialTheme.typography.titleMedium)
+
+                FilterDropdown(
+                    label = "Category",
+                    options = categoryOptions,
+                    selectedValue = selectedCategory,
+                    onValueSelected = { viewModel.setSelectedCategory(it) }
+                )
+
+                FilterDropdown(
+                    label = "Color",
+                    options = colorOptions,
+                    selectedValue = selectedColor,
+                    onValueSelected = { viewModel.setSelectedColor(it) }
+                )
+
+                FilterDropdown(
+                    label = "Brand",
+                    options = brandOptions,
+                    selectedValue = selectedBrand,
+                    onValueSelected = { viewModel.setSelectedBrand(it) }
+                )
+
+                FilterDropdown(
+                    label = "Size",
+                    options = sizeOptions,
+                    selectedValue = selectedSize,
+                    onValueSelected = { viewModel.setSelectedSize(it) }
+                )
+
+                OutlinedButton(onClick = { viewModel.clearFilters() }) {
+                    Text("Clear Filters")
                 }
             }
         }
@@ -276,8 +267,10 @@ fun ClosetScreen() {
                                         editBrand.isNotBlank() &&
                                         editSize.isNotBlank(),
                                 onClick = {
+                                    val itemId = editingItemId ?: return@Button
+
                                     viewModel.updateClothingItem(
-                                        itemId = editingItemId!!,
+                                        itemId = itemId,
                                         category = editCategory,
                                         color = editColor,
                                         brand = editBrand,
@@ -291,9 +284,7 @@ fun ClosetScreen() {
                             }
 
                             OutlinedButton(
-                                onClick = {
-                                    editingItemId = null
-                                },
+                                onClick = { editingItemId = null },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Cancel")
@@ -313,9 +304,9 @@ fun ClosetScreen() {
                 onEdit = {
                     editingItemId = item.id
                     editCategory = item.category
-                    editColor = item.color
-                    editBrand = item.brand
-                    editSize = item.size
+                    editColor = item.color ?: ""
+                    editBrand = item.brand ?: ""
+                    editSize = item.size ?: ""
                 },
                 onDelete = {
                     viewModel.deleteClothingItem(item.id)
@@ -331,7 +322,7 @@ fun ClosetScreen() {
 
 @Composable
 fun ClothingItemCard(
-    item: ClothingItem,
+    item: ClothingItemUi,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -392,6 +383,12 @@ fun ClothingItemCard(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Category: ${item.category}")
+            Text("Color: ${item.color ?: "-"}")
+            Text("Brand: ${item.brand ?: "-"}")
+            Text("Size: ${item.size ?: "-"}")
         }
     }
 }
@@ -405,6 +402,7 @@ fun DropdownSelector(
     onValueSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val isColorSelector = label == "Color"
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -419,7 +417,25 @@ fun DropdownSelector(
                 .fillMaxWidth()
                 .menuAnchor(),
             trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isColorSelector && selectedValue.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = getColorFromName(selectedValue),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                }
             }
         )
 
@@ -429,7 +445,28 @@ fun DropdownSelector(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = {
+                        if (isColorSelector) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .background(
+                                            color = getColorFromName(option),
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                        .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(option)
+                            }
+                        } else {
+                            Text(option)
+                        }
+                    },
                     onClick = {
                         onValueSelected(option)
                         expanded = false
@@ -450,6 +487,7 @@ fun FilterDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val isColorFilter = label == "Color"
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -464,7 +502,25 @@ fun FilterDropdown(
                 .fillMaxWidth()
                 .menuAnchor(),
             trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isColorFilter && selectedValue != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = getColorFromName(selectedValue),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                }
             }
         )
 
@@ -479,9 +535,31 @@ fun FilterDropdown(
                     expanded = false
                 }
             )
+
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = {
+                        if (isColorFilter) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .background(
+                                            color = getColorFromName(option),
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                        .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(option)
+                            }
+                        } else {
+                            Text(option)
+                        }
+                    },
                     onClick = {
                         onValueSelected(option)
                         expanded = false

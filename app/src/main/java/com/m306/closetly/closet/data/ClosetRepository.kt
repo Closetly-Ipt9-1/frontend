@@ -4,7 +4,7 @@ import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.m306.closetly.closet.func.Images
-import com.m306.closetly.closet.model.ClothingItem
+import com.m306.closetly.closet.model.ClothingItemUi
 
 class ClosetRepository {
 
@@ -18,7 +18,7 @@ class ClosetRepository {
         color: String,
         brand: String,
         size: String,
-        onSuccess: (ClothingItem) -> Unit,
+        onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
         val userId = auth.currentUser?.uid
@@ -27,16 +27,16 @@ class ClosetRepository {
             return
         }
 
-        images.uploadClothes(
+        images.uploadClothesImage(
             imageUri = imageUri,
             onSuccess = { imageUrl ->
                 val data = hashMapOf(
                     "userId" to userId,
                     "category" to category,
                     "imageUrl" to imageUrl,
-                    "color" to color,
-                    "brand" to brand,
-                    "size" to size,
+                    "color" to color.ifBlank { null },
+                    "brand" to brand.ifBlank { null },
+                    "size" to size.ifBlank { null },
                     "createdAt" to System.currentTimeMillis()
                 )
 
@@ -44,13 +44,13 @@ class ClosetRepository {
                     .add(data)
                     .addOnSuccessListener { documentRef ->
                         onSuccess(
-                            ClothingItem(
+                            ClothingItemUi(
                                 id = documentRef.id,
                                 category = category,
                                 imageUrl = imageUrl,
-                                color = color,
-                                brand = brand,
-                                size = size
+                                color = color.ifBlank { null },
+                                brand = brand.ifBlank { null },
+                                size = size.ifBlank { null }
                             )
                         )
                     }
@@ -63,7 +63,7 @@ class ClosetRepository {
     }
 
     fun getClothingItems(
-        onSuccess: (List<ClothingItem>) -> Unit,
+        onSuccess: (List<ClothingItemUi>) -> Unit,
         onError: (Exception) -> Unit
     ) {
         val userId = auth.currentUser?.uid
@@ -77,13 +77,13 @@ class ClosetRepository {
             .get()
             .addOnSuccessListener { result ->
                 val items = result.map {
-                    ClothingItem(
+                    ClothingItemUi(
                         id = it.id,
                         category = it.getString("category") ?: "",
                         imageUrl = it.getString("imageUrl") ?: "",
-                        color = it.getString("color") ?: "",
-                        brand = it.getString("brand") ?: "",
-                        size = it.getString("size") ?: ""
+                        color = it.getString("color"),
+                        brand = it.getString("brand"),
+                        size = it.getString("size")
                     )
                 }
                 onSuccess(items)
@@ -115,14 +115,14 @@ class ClosetRepository {
         color: String,
         brand: String,
         size: String,
-        onSuccess: (ClothingItem) -> Unit,
+        onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
         val data = mapOf(
             "category" to category,
-            "color" to color,
-            "brand" to brand,
-            "size" to size
+            "color" to color.ifBlank { null },
+            "brand" to brand.ifBlank { null },
+            "size" to size.ifBlank { null }
         )
 
         db.collection("clothingItems")
@@ -134,15 +134,18 @@ class ClosetRepository {
                     .get()
                     .addOnSuccessListener { doc ->
                         onSuccess(
-                            ClothingItem(
+                            ClothingItemUi(
                                 id = doc.id,
                                 category = doc.getString("category") ?: "",
                                 imageUrl = doc.getString("imageUrl") ?: "",
-                                color = doc.getString("color") ?: "",
-                                brand = doc.getString("brand") ?: "",
-                                size = doc.getString("size") ?: ""
+                                color = doc.getString("color"),
+                                brand = doc.getString("brand"),
+                                size = doc.getString("size")
                             )
                         )
+                    }
+                    .addOnFailureListener {
+                        onError(it)
                     }
             }
             .addOnFailureListener {
@@ -150,4 +153,3 @@ class ClosetRepository {
             }
     }
 }
-
