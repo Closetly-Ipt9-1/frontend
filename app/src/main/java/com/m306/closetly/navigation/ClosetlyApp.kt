@@ -169,6 +169,14 @@ fun ClosetlyApp() {
             composable(Routes.SAVED_OUTFITS) {
                 SavedOutfitsScreen()
             }
+
+            composable(Routes.CREATE_AVATAR) {
+                CreateAvatarScreen(navController)
+            }
+
+            composable("custom_avatar") {
+                CustomAvatarScreen(navController)
+            }
         }
     }
 }
