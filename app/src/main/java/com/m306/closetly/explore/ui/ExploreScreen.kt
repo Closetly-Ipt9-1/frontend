@@ -17,9 +17,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,6 +55,8 @@ data class ExploreOutfit(
     val isPublic: Boolean,
     val likeCount: Int,
     val likedBy: List<String>,
+    val saveCount: Int,
+    val savedBy: List<String>,
     val createdAt: Long
 )
 
@@ -92,6 +96,8 @@ fun ExploreScreen() {
                             isPublic = document.getBoolean("isPublic") ?: false,
                             likeCount = document.getLong("likeCount")?.toInt() ?: 0,
                             likedBy = (document.get("likedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
+                            saveCount = document.getLong("saveCount")?.toInt() ?: 0,
+                            savedBy = (document.get("savedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
                             createdAt = document.getLong("createdAt") ?: 0L
                         )
                     }
@@ -185,6 +191,15 @@ fun ExploreScreen() {
                                     userId = currentUserId
                                 )
                             }
+                        },
+                        onSaveClick = {
+                            if (currentUserId != null) {
+                                toggleSave(
+                                    firestore = firestore,
+                                    outfitId = outfit.id,
+                                    userId = currentUserId
+                                )
+                            }
                         }
                     )
                 }
@@ -201,9 +216,11 @@ fun ExploreScreen() {
 fun ExploreOutfitCard(
     outfit: ExploreOutfit,
     currentUserId: String?,
-    onLikeClick: () -> Unit
+    onLikeClick: () -> Unit,
+    onSaveClick: () -> Unit
 ) {
     val isLiked = currentUserId != null && outfit.likedBy.contains(currentUserId)
+    val isSaved = currentUserId != null && outfit.savedBy.contains(currentUserId)
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -324,6 +341,32 @@ fun ExploreOutfitCard(
                         text = "${outfit.likeCount} likes",
                         style = MaterialTheme.typography.bodyMedium
                     )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    IconButton(
+                        onClick = onSaveClick
+                    ) {
+                        Icon(
+                            imageVector = if (isSaved) {
+                                Icons.Default.Check
+                            } else {
+                                Icons.Default.CheckCircle
+                            },
+                            contentDescription = "Save",
+                            modifier = Modifier.size(28.dp),
+                            tint = if (isSaved) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+
+                    Text(
+                        text = "${outfit.saveCount} saves",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
         }
@@ -350,6 +393,8 @@ private fun seedPlaceholderOutfitsIfNeeded(firestore: FirebaseFirestore) {
                     "isPublic" to true,
                     "likeCount" to 0,
                     "likedBy" to emptyList<String>(),
+                    "saveCount" to 0,
+                    "savedBy" to emptyList<String>(),
                     "createdAt" to System.currentTimeMillis()
                 )
             )
@@ -365,6 +410,8 @@ private fun seedPlaceholderOutfitsIfNeeded(firestore: FirebaseFirestore) {
                     "isPublic" to true,
                     "likeCount" to 0,
                     "likedBy" to emptyList<String>(),
+                    "saveCount" to 0,
+                    "savedBy" to emptyList<String>(),
                     "createdAt" to System.currentTimeMillis() - 1
                 )
             )
@@ -401,6 +448,39 @@ private fun toggleLike(
             mapOf(
                 "likedBy" to likedBy,
                 "likeCount" to likeCount
+            )
+        )
+    }
+}
+
+private fun toggleSave(
+    firestore: FirebaseFirestore,
+    outfitId: String,
+    userId: String
+) {
+    val docRef = firestore.collection("outfits").document(outfitId)
+
+    firestore.runTransaction { transaction ->
+        val snapshot = transaction.get(docRef)
+        val savedBy = (snapshot.get("savedBy") as? List<*>)?.filterIsInstance<String>()?.toMutableList()
+            ?: mutableListOf()
+        var saveCount = snapshot.getLong("saveCount")?.toInt() ?: 0
+
+        if (savedBy.contains(userId)) {
+            savedBy.remove(userId)
+            if (saveCount > 0) {
+                saveCount -= 1
+            }
+        } else {
+            savedBy.add(userId)
+            saveCount += 1
+        }
+
+        transaction.update(
+            docRef,
+            mapOf(
+                "savedBy" to savedBy,
+                "saveCount" to saveCount
             )
         )
     }
