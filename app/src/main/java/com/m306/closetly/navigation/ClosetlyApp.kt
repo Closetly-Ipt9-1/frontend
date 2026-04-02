@@ -140,15 +140,20 @@ fun ClosetlyApp() {
                             launchSingleTop = true
                         }
                     },
+                    onLogoutClick = {
+                        com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     onSavedOutfitsClick = {
                         navController.navigate(Routes.SAVED_OUTFITS) {
                             launchSingleTop = true
                         }
                     },
-                    onLogoutClick = {
-                        com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(0) { inclusive = true }
+                    onCreateAvatarClick = {
+                        navController.navigate(Routes.CREATE_AVATAR) {
                             launchSingleTop = true
                         }
                     }

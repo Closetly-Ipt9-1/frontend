@@ -53,13 +53,15 @@ import java.util.UUID
 fun ProfileScreen(
     onEditClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    onSavedOutfitsClick: () -> Unit
+    onSavedOutfitsClick: () -> Unit,
+    onCreateAvatarClick: () -> Unit
 ) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val storage = FirebaseStorage.getInstance()
     val user = auth.currentUser
 
+    var avatarUrl by remember { mutableStateOf<String?>(null) }
     var photoUrl: String? by remember(user?.photoUrl) {
         mutableStateOf(user?.photoUrl?.toString())
     }
@@ -137,7 +139,15 @@ fun ProfileScreen(
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (!photoUrl.isNullOrBlank()) {
+        if (!avatarUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = "Avatar",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+            )
+        } else if (!photoUrl.isNullOrBlank()) {
             AsyncImage(
                 model = photoUrl,
                 contentDescription = "Profile picture",
@@ -168,10 +178,22 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        if (avatarUrl.isNullOrBlank()) {
+            Button(
+                onClick = onCreateAvatarClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Create Avatar")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         OutlinedButton(
             onClick = {
                 showSourceDialog = true
-            }
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Choose profile picture")
         }
@@ -240,7 +262,7 @@ fun ProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Button(
             onClick = onLogoutClick,
             modifier = Modifier.fillMaxWidth()
@@ -348,7 +370,7 @@ private fun createImageUri(context: Context): Uri {
 }
 
 @Composable
-fun ProfileInfoItem(
+private fun ProfileInfoItem(
     title: String,
     value: String
 ) {
