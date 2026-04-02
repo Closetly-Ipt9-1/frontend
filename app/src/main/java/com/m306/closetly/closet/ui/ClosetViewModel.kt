@@ -7,11 +7,9 @@ import com.m306.closetly.closet.data.ClosetRepository
 import com.m306.closetly.closet.model.ClothingItemUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-
 
 class ClosetViewModel : ViewModel() {
 
@@ -26,7 +24,6 @@ class ClosetViewModel : ViewModel() {
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message
 
-    // Filter states
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory
 
@@ -48,9 +45,9 @@ class ClosetViewModel : ViewModel() {
     ) { clothes, category, color, brand, size ->
         clothes.filter { item ->
             (category == null || item.category == category) &&
-                    (color == null || item.color == color) &&
-                    (brand == null || item.brand == brand) &&
-                    (size == null || item.size == size)
+            (color == null || item.color == color) &&
+            (brand == null || item.brand == brand) &&
+            (size == null || item.size == size)
         }
     }.stateIn(
         scope = viewModelScope,
@@ -89,6 +86,54 @@ class ClosetViewModel : ViewModel() {
                 _clothes.value = listOf(newItem) + _clothes.value
                 _isBusy.value = false
                 _message.value = "Saved!"
+            },
+            onError = { exception ->
+                _isBusy.value = false
+                _message.value = exception.message ?: "Error"
+            }
+        )
+    }
+
+    fun deleteClothingItem(itemId: String) {
+        _isBusy.value = true
+        _message.value = ""
+
+        repository.deleteClothingItem(
+            itemId = itemId,
+            onSuccess = {
+                _clothes.value = _clothes.value.filter { it.id != itemId }
+                _isBusy.value = false
+                _message.value = "Deleted!"
+            },
+            onError = { exception ->
+                _isBusy.value = false
+                _message.value = exception.message ?: "Error"
+            }
+        )
+    }
+
+    fun updateClothingItem(
+        itemId: String,
+        category: String,
+        color: String,
+        brand: String,
+        size: String
+    ) {
+        _isBusy.value = true
+        _message.value = ""
+
+        repository.updateClothingItem(
+            itemId = itemId,
+            category = category,
+            color = color,
+            brand = brand,
+            size = size,
+            onSuccess = { updatedItem ->
+                _clothes.value = _clothes.value.map {
+                    if (it.id == itemId) updatedItem else it
+                }
+                _isBusy.value = false
+                _message.value = "Updated!"
             },
             onError = { exception ->
                 _isBusy.value = false
