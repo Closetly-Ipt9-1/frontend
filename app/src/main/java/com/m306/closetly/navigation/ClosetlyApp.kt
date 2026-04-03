@@ -23,6 +23,8 @@ import com.m306.closetly.profile.ui.ProfileScreen
 import com.m306.closetly.profile.ui.EditProfileScreen
 import com.m306.closetly.auth.func.AuthManager
 import com.m306.closetly.profile.ui.SavedOutfitsScreen
+import com.m306.closetly.profile.ui.CreateAvatarScreen
+import com.m306.closetly.profile.ui.CustomAvatarScreen
 
 
 @Composable

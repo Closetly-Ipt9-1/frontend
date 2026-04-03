@@ -9,7 +9,6 @@ object Routes {
     const val PROFILE = "profile"
     const val EDIT_PROFILE = "edit_profile"
     const val SAVED_OUTFITS = "saved_outfits"
-    const val PROFILE = "profile"
     const val CREATE_AVATAR = "create_avatar"
     const val CUSTOM_AVATAR = "custom_avatar"
 }

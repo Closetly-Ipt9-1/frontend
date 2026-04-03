@@ -1,14 +1,23 @@
 package com.m306.closetly.profile.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.m306.closetly.profile.data.AvatarRepository
 import com.m306.closetly.profile.model.Avatar
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class CreateAvatarViewModel : ViewModel() {
 
     private val repo = AvatarRepository()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _isSaved = MutableStateFlow(false)
+    val isSaved: StateFlow<Boolean> = _isSaved
 
     fun saveDefaultAvatar(hair: String, skin: String, imageUrl: String) {
         viewModelScope.launch {
@@ -23,15 +32,20 @@ class CreateAvatarViewModel : ViewModel() {
         }
     }
 
-    fun saveCustomAvatar(front: String, side: String) {
+    fun saveCustomAvatar(frontUri: Uri, sideUri: Uri) {
         viewModelScope.launch {
+            _isLoading.value = true
+            val frontUrl = repo.uploadImage(frontUri, "front.jpg")
+            val sideUrl = repo.uploadImage(sideUri, "side.jpg")
             repo.saveAvatar(
                 Avatar(
                     type = "custom",
-                    frontImageUrl = front,
-                    sideImageUrl = side
+                    frontImageUrl = frontUrl,
+                    sideImageUrl = sideUrl
                 )
             )
+            _isLoading.value = false
+            _isSaved.value = true
         }
     }
 }
