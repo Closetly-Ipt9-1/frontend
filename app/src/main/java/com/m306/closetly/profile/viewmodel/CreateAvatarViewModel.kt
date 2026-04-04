@@ -19,16 +19,33 @@ class CreateAvatarViewModel : ViewModel() {
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved
 
-    fun saveDefaultAvatar(hair: String, skin: String, imageUrl: String) {
+    private val _existingAvatar = MutableStateFlow<Avatar?>(null)
+    val existingAvatar: StateFlow<Avatar?> = _existingAvatar
+
+    fun loadExistingAvatar() {
         viewModelScope.launch {
+            _existingAvatar.value = repo.getAvatar()
+        }
+    }
+
+    fun resetSaved() {
+        _isSaved.value = false
+    }
+
+    fun saveDefaultAvatar(gender: String, hair: String, skin: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
             repo.saveAvatar(
                 Avatar(
                     type = "default",
+                    gender = gender,
                     hairColor = hair,
                     skinColor = skin,
-                    imageUrl = imageUrl
+                    imageUrl = ""
                 )
             )
+            _isLoading.value = false
+            _isSaved.value = true
         }
     }
 
