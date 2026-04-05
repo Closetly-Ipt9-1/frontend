@@ -3,4 +3,7 @@
     <cache-path
         name="camera_images"
         path="." />
+    <cache-path 
+        name="avatar_images"
+        path="." />
 </paths>

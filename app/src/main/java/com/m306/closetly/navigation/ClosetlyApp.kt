@@ -6,8 +6,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
@@ -23,13 +25,24 @@ import com.m306.closetly.profile.ui.ProfileScreen
 import com.m306.closetly.profile.ui.EditProfileScreen
 import com.m306.closetly.auth.func.AuthManager
 import com.m306.closetly.profile.ui.SavedOutfitsScreen
-
+import com.m306.closetly.profile.ui.CreateAvatarScreen
+import com.m306.closetly.profile.ui.CustomAvatarScreen
+import com.m306.closetly.profile.ui.StandardAvatarScreen
+import com.m306.closetly.profile.viewmodel.ProfileViewModel
 
 @Composable
 fun ClosetlyApp() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    val profileViewModel: ProfileViewModel = viewModel()
+
+    LaunchedEffect(currentDestination?.route) {
+        if (currentDestination?.route == Routes.PROFILE) {
+            profileViewModel.loadAvatar()
+        }
+    }
 
     val bottomItems = listOf(
         BottomNavItem.Explore,
@@ -46,7 +59,6 @@ fun ClosetlyApp() {
     )
     val startDestination =
         if (AuthManager.getCurrentUserId() != null) Routes.EXPLORE else Routes.LOGIN
-
 
     Scaffold(
         bottomBar = {
@@ -74,9 +86,7 @@ fun ClosetlyApp() {
                                     contentDescription = item.title
                                 )
                             },
-                            label = {
-                                Text(item.title)
-                            }
+                            label = { Text(item.title) }
                         )
                     }
                 }
@@ -121,27 +131,15 @@ fun ClosetlyApp() {
                 )
             }
 
-            composable(Routes.EXPLORE) {
-                ExploreScreen()
-            }
-
-            composable(Routes.FIT_CREATOR) {
-                FitCreatorScreen()
-            }
-
-            composable(Routes.CLOSET) {
-                ClosetScreen()
-            }
+            composable(Routes.EXPLORE) { ExploreScreen() }
+            composable(Routes.FIT_CREATOR) { FitCreatorScreen() }
+            composable(Routes.CLOSET) { ClosetScreen() }
 
             composable(Routes.PROFILE) {
                 ProfileScreen(
+                    viewModel = profileViewModel,
                     onEditClick = {
                         navController.navigate(Routes.EDIT_PROFILE) {
-                            launchSingleTop = true
-                        }
-                    },
-                    onSavedOutfitsClick = {
-                        navController.navigate(Routes.SAVED_OUTFITS) {
                             launchSingleTop = true
                         }
                     },
@@ -151,23 +149,45 @@ fun ClosetlyApp() {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }
+                    },
+                    onSavedOutfitsClick = {
+                        navController.navigate(Routes.SAVED_OUTFITS) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onCreateAvatarClick = {
+                        navController.navigate(Routes.CREATE_AVATAR) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onCustomizeAvatarClick = { avatarType ->
+                        val route = if (avatarType == "default") Routes.STANDARD_AVATAR else Routes.CUSTOM_AVATAR
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
 
             composable(Routes.EDIT_PROFILE) {
                 EditProfileScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onSaveSuccess = {
-                        navController.popBackStack()
-                    }
+                    onBackClick = { navController.popBackStack() },
+                    onSaveSuccess = { navController.popBackStack() }
                 )
             }
 
-            composable(Routes.SAVED_OUTFITS) {
-                SavedOutfitsScreen()
+            composable(Routes.SAVED_OUTFITS) { SavedOutfitsScreen() }
+
+            composable(Routes.CREATE_AVATAR) {
+                CreateAvatarScreen(navController)
+            }
+
+            composable(Routes.STANDARD_AVATAR) {
+                StandardAvatarScreen(navController)
+            }
+
+            composable(Routes.CUSTOM_AVATAR) {
+                CustomAvatarScreen(navController)
             }
         }
     }

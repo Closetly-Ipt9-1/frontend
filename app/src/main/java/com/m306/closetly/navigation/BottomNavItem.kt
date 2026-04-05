@@ -8,7 +8,6 @@ sealed class BottomNavItem(
     val title: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
-
     object Explore : BottomNavItem(
         route = Routes.EXPLORE,
         title = "Explore",
