@@ -50,13 +50,12 @@ private val skinOptions = listOf(
 )
 
 private val hairOptions = listOf(
-    "blond" to Color(0xFFFFD700),
-    "braun" to Color(0xFF6B3A2A),
+    "hellblond" to Color(0xFFFFE680),
+    "dunkelblond" to Color(0xFFD4A843),
+    "hellbraun" to Color(0xFFA0674A),
+    "kastanienbraun" to Color(0xFF6B2D0E),
     "dunkelbraun" to Color(0xFF3B1C0C),
-    "schwarz" to Color(0xFF1A1A1A),
-    "rot" to Color(0xFFB22222),
-    "grau" to Color(0xFF9E9E9E),
-    "weiß" to Color(0xFFF0F0F0)
+    "schwarz" to Color(0xFF1A1A1A)
 )
 
 @Composable
@@ -81,7 +80,7 @@ fun StandardAvatarScreen(
 
     var selectedGender by remember { mutableStateOf("männlich") }
     var selectedSkin by remember { mutableStateOf("hell") }
-    var selectedHair by remember { mutableStateOf("braun") }
+    var selectedHair by remember { mutableStateOf("hellbraun") }
 
     LaunchedEffect(existingAvatar) {
         existingAvatar?.let { avatar ->

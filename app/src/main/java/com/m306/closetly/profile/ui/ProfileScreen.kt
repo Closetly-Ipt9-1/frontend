@@ -349,14 +349,13 @@ private fun DefaultAvatarPreview(avatar: Avatar) {
         else -> Color(0xFFFFDBAC)
     }
     val hairColor = when (avatar.hairColor) {
-        "blond" -> Color(0xFFFFD700)
-        "braun" -> Color(0xFF6B3A2A)
+        "hellblond" -> Color(0xFFFFE680)
+        "dunkelblond" -> Color(0xFFD4A843)
+        "hellbraun" -> Color(0xFFA0674A)
+        "kastanienbraun" -> Color(0xFF6B2D0E)
         "dunkelbraun" -> Color(0xFF3B1C0C)
         "schwarz" -> Color(0xFF1A1A1A)
-        "rot" -> Color(0xFFB22222)
-        "grau" -> Color(0xFF9E9E9E)
-        "weiß" -> Color(0xFFF0F0F0)
-        else -> Color(0xFF6B3A2A)
+        else -> Color(0xFFA0674A)
     }
 
     Box(
