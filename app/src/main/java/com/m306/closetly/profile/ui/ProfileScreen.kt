@@ -340,15 +340,22 @@ fun ProfileScreen(
 @Composable
 private fun DefaultAvatarPreview(avatar: Avatar) {
     val skinColor = when (avatar.skinColor) {
+        "sehr hell" -> Color(0xFFFEE4C4)
+        "hell" -> Color(0xFFFFDBAC)
+        "mittel-hell" -> Color(0xFFD4A574)
         "mittel" -> Color(0xFFC68642)
+        "mittel-dunkel" -> Color(0xFF8D5524)
         "dunkel" -> Color(0xFF4A2912)
         else -> Color(0xFFFFDBAC)
     }
     val hairColor = when (avatar.hairColor) {
         "blond" -> Color(0xFFFFD700)
+        "braun" -> Color(0xFF6B3A2A)
+        "dunkelbraun" -> Color(0xFF3B1C0C)
         "schwarz" -> Color(0xFF1A1A1A)
         "rot" -> Color(0xFFB22222)
-        "grau" -> Color(0xFF808080)
+        "grau" -> Color(0xFF9E9E9E)
+        "weiß" -> Color(0xFFF0F0F0)
         else -> Color(0xFF6B3A2A)
     }
 

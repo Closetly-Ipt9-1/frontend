@@ -1,7 +1,11 @@
 package com.m306.closetly.profile.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,12 +13,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,11 +32,32 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.m306.closetly.navigation.Routes
 import com.m306.closetly.profile.viewmodel.CreateAvatarViewModel
+
+private val skinOptions = listOf(
+    "sehr hell" to Color(0xFFFEE4C4),
+    "hell" to Color(0xFFFFDBAC),
+    "mittel-hell" to Color(0xFFD4A574),
+    "mittel" to Color(0xFFC68642),
+    "mittel-dunkel" to Color(0xFF8D5524),
+    "dunkel" to Color(0xFF4A2912)
+)
+
+private val hairOptions = listOf(
+    "blond" to Color(0xFFFFD700),
+    "braun" to Color(0xFF6B3A2A),
+    "dunkelbraun" to Color(0xFF3B1C0C),
+    "schwarz" to Color(0xFF1A1A1A),
+    "rot" to Color(0xFFB22222),
+    "grau" to Color(0xFF9E9E9E),
+    "weiß" to Color(0xFFF0F0F0)
+)
 
 @Composable
 fun StandardAvatarScreen(
@@ -62,10 +91,6 @@ fun StandardAvatarScreen(
         }
     }
 
-    val genderOptions = listOf("männlich", "weiblich", "divers")
-    val skinOptions = listOf("hell", "mittel", "dunkel")
-    val hairOptions = listOf("blond", "braun", "schwarz", "rot", "grau")
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -83,17 +108,21 @@ fun StandardAvatarScreen(
 
         Text("Geschlecht", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
-        AvatarOptionRow(
-            options = genderOptions,
-            selected = selectedGender,
-            onSelect = { selectedGender = it }
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("männlich", "weiblich").forEach { option ->
+                FilterChip(
+                    selected = selectedGender == option,
+                    onClick = { selectedGender = option },
+                    label = { Text(option) }
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text("Hautfarbe", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
-        AvatarOptionRow(
+        ColorSwatchRow(
             options = skinOptions,
             selected = selectedSkin,
             onSelect = { selectedSkin = it }
@@ -103,18 +132,11 @@ fun StandardAvatarScreen(
 
         Text("Haarfarbe", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            hairOptions.forEach { option ->
-                FilterChip(
-                    selected = selectedHair == option,
-                    onClick = { selectedHair = option },
-                    label = { Text(option) }
-                )
-            }
-        }
+        ColorSwatchRow(
+            options = hairOptions,
+            selected = selectedHair,
+            onSelect = { selectedHair = it }
+        )
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -133,23 +155,58 @@ fun StandardAvatarScreen(
             ) {
                 Text("Speichern")
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = { navController.navigate(Routes.CUSTOM_AVATAR) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Zu Custom Avatar wechseln")
+            }
         }
     }
 }
 
 @Composable
-private fun AvatarOptionRow(
-    options: List<String>,
+private fun ColorSwatchRow(
+    options: List<Pair<String, Color>>,
     selected: String,
     onSelect: (String) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEach { option ->
-            FilterChip(
-                selected = selected == option,
-                onClick = { onSelect(option) },
-                label = { Text(option) }
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        options.forEach { (label, color) ->
+            ColorSwatch(
+                color = color,
+                selected = selected == label,
+                onSelect = { onSelect(label) }
             )
         }
     }
+}
+
+@Composable
+private fun ColorSwatch(
+    color: Color,
+    selected: Boolean,
+    onSelect: () -> Unit
+) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f)
+    val borderWidth = if (selected) 3.dp else 1.dp
+
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(color)
+            .border(borderWidth, borderColor, RoundedCornerShape(8.dp))
+            .clickable { onSelect() }
+    )
 }
