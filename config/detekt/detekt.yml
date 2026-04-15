@@ -7,8 +7,6 @@ complexity:
     threshold: 30
   LongParameterList:
     active: false
-  ReturnCount:
-    active: false
 
 exceptions:
   TooGenericExceptionCaught:
@@ -32,4 +30,6 @@ style:
   MaxLineLength:
     active: false
   UnusedPrivateProperty:
+    active: false
+  ReturnCount:
     active: false
