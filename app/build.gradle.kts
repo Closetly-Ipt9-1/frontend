@@ -13,6 +13,7 @@ detekt {
     buildUponDefaultConfig = true
     allRules = false
     ignoreFailures = false
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 }
 
 android {
