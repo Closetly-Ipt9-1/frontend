@@ -30,7 +30,6 @@ class ClosetRepository {
         images.uploadClothesImage(
             imageUri = imageUri,
             onSuccess = { imageUrl ->
-
                 val data = hashMapOf(
                     "userId" to userId,
                     "category" to category,
@@ -88,6 +87,66 @@ class ClosetRepository {
                     )
                 }
                 onSuccess(items)
+            }
+            .addOnFailureListener {
+                onError(it)
+            }
+    }
+
+    fun deleteClothingItem(
+        itemId: String,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        db.collection("clothingItems")
+            .document(itemId)
+            .delete()
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener {
+                onError(it)
+            }
+    }
+
+    fun updateClothingItem(
+        itemId: String,
+        category: String,
+        color: String,
+        brand: String,
+        size: String,
+        onSuccess: (ClothingItemUi) -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        val data = mapOf(
+            "category" to category,
+            "color" to color.ifBlank { null },
+            "brand" to brand.ifBlank { null },
+            "size" to size.ifBlank { null }
+        )
+
+        db.collection("clothingItems")
+            .document(itemId)
+            .update(data)
+            .addOnSuccessListener {
+                db.collection("clothingItems")
+                    .document(itemId)
+                    .get()
+                    .addOnSuccessListener { doc ->
+                        onSuccess(
+                            ClothingItemUi(
+                                id = doc.id,
+                                category = doc.getString("category") ?: "",
+                                imageUrl = doc.getString("imageUrl") ?: "",
+                                color = doc.getString("color"),
+                                brand = doc.getString("brand"),
+                                size = doc.getString("size")
+                            )
+                        )
+                    }
+                    .addOnFailureListener {
+                        onError(it)
+                    }
             }
             .addOnFailureListener {
                 onError(it)

@@ -13,6 +13,7 @@ detekt {
     buildUponDefaultConfig = true
     allRules = false
     ignoreFailures = false
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 }
 
 android {
@@ -77,6 +78,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore:26.1.2")
+
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
