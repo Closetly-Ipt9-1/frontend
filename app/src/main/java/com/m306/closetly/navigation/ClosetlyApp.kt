@@ -165,6 +165,11 @@ fun ClosetlyApp() {
                         navController.navigate(route) {
                             launchSingleTop = true
                         }
+                    },
+                    onSwitchToCustomAvatarClick = {
+                        navController.navigate(Routes.CUSTOM_AVATAR) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
