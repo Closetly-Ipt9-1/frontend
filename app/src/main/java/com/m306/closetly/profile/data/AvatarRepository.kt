@@ -24,6 +24,11 @@ class AvatarRepository {
         db.collection("avatars").document(userId).set(avatar).await()
     }
 
+    suspend fun getDefaultAvatarUrl(gender: String, skin: String, hair: String): String {
+        val ref = storage.reference.child("avatars/default/${gender}_${skin}_${hair}.png")
+        return ref.downloadUrl.await().toString()
+    }
+
     suspend fun uploadImage(uri: Uri, filename: String): String {
         val userId = auth.currentUser?.uid ?: error("Nicht eingeloggt")
         val ref = storage.reference.child("avatars/$userId/$filename")

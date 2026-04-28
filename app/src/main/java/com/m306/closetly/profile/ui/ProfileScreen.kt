@@ -64,7 +64,8 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onSavedOutfitsClick: () -> Unit,
     onCreateAvatarClick: () -> Unit,
-    onCustomizeAvatarClick: (avatarType: String) -> Unit
+    onCustomizeAvatarClick: (avatarType: String) -> Unit,
+    onSwitchToCustomAvatarClick: () -> Unit
 ) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
@@ -147,6 +148,15 @@ fun ProfileScreen(
                         .clip(CircleShape)
                 )
             }
+            avatar?.type == "default" && !avatar!!.imageUrl.isNullOrBlank() -> {
+                AsyncImage(
+                    model = avatar!!.imageUrl,
+                    contentDescription = "Standard Avatar",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                )
+            }
             avatar?.type == "default" -> {
                 DefaultAvatarPreview(avatar = avatar!!)
             }
@@ -207,6 +217,15 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Avatar anpassen")
+            }
+            if (avatar!!.type == "default") {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onSwitchToCustomAvatarClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Zu Custom Avatar wechseln")
+                }
             }
         }
 
@@ -340,11 +359,8 @@ fun ProfileScreen(
 @Composable
 private fun DefaultAvatarPreview(avatar: Avatar) {
     val skinColor = when (avatar.skinColor) {
-        "sehr hell" -> Color(0xFFFEE4C4)
         "hell" -> Color(0xFFFFDBAC)
-        "mittel-hell" -> Color(0xFFD4A574)
         "mittel" -> Color(0xFFC68642)
-        "mittel-dunkel" -> Color(0xFF8D5524)
         "dunkel" -> Color(0xFF4A2912)
         else -> Color(0xFFFFDBAC)
     }

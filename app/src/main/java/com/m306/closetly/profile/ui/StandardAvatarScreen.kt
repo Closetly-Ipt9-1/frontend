@@ -41,11 +41,8 @@ import com.m306.closetly.navigation.Routes
 import com.m306.closetly.profile.viewmodel.CreateAvatarViewModel
 
 private val skinOptions = listOf(
-    "sehr hell" to Color(0xFFFEE4C4),
     "hell" to Color(0xFFFFDBAC),
-    "mittel-hell" to Color(0xFFD4A574),
     "mittel" to Color(0xFFC68642),
-    "mittel-dunkel" to Color(0xFF8D5524),
     "dunkel" to Color(0xFF4A2912)
 )
 

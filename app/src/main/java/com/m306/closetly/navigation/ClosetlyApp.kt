@@ -160,9 +160,13 @@ fun ClosetlyApp() {
                             launchSingleTop = true
                         }
                     },
-                    onCustomizeAvatarClick = { avatarType ->
-                        val route = if (avatarType == "default") Routes.STANDARD_AVATAR else Routes.CUSTOM_AVATAR
-                        navController.navigate(route) {
+                    onCustomizeAvatarClick = { _ ->
+                        navController.navigate(Routes.CREATE_AVATAR) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onSwitchToCustomAvatarClick = {
+                        navController.navigate(Routes.CUSTOM_AVATAR) {
                             launchSingleTop = true
                         }
                     }
