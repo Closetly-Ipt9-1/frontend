@@ -64,7 +64,8 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onSavedOutfitsClick: () -> Unit,
     onCreateAvatarClick: () -> Unit,
-    onCustomizeAvatarClick: (avatarType: String) -> Unit
+    onCustomizeAvatarClick: (avatarType: String) -> Unit,
+    onPremiumClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
@@ -244,6 +245,22 @@ fun ProfileScreen(
                 HorizontalDivider()
                 ProfileInfoItem(title = "Benutzer-ID", value = uid)
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onPremiumClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "Mange premium")
+            Spacer(modifier = Modifier.width(8.dp))
+            if (true){
+                Text("Buy Premium")
+            }else{
+                Text("Manage your abo")
+            }
+
         }
 
         Spacer(modifier = Modifier.height(24.dp))

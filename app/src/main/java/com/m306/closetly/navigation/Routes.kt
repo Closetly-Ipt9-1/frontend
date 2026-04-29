@@ -12,4 +12,5 @@ object Routes {
     const val CREATE_AVATAR = "create_avatar"
     const val STANDARD_AVATAR = "standard_avatar"
     const val CUSTOM_AVATAR = "custom_avatar"
+    const val MANAGE_SUBSCRIPTION = "manage_subscription"
 }

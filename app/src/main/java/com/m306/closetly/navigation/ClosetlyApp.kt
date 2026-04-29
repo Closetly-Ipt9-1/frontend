@@ -29,6 +29,7 @@ import com.m306.closetly.profile.ui.CreateAvatarScreen
 import com.m306.closetly.profile.ui.CustomAvatarScreen
 import com.m306.closetly.profile.ui.StandardAvatarScreen
 import com.m306.closetly.profile.viewmodel.ProfileViewModel
+import com.m306.closetly.premium.ui.PremiumScreen
 
 @Composable
 fun ClosetlyApp() {
@@ -55,7 +56,7 @@ fun ClosetlyApp() {
         Routes.EXPLORE,
         Routes.FIT_CREATOR,
         Routes.CLOSET,
-        Routes.PROFILE
+        Routes.PROFILE,
     )
     val startDestination =
         if (AuthManager.getCurrentUserId() != null) Routes.EXPLORE else Routes.LOGIN
@@ -134,6 +135,8 @@ fun ClosetlyApp() {
             composable(Routes.EXPLORE) { ExploreScreen() }
             composable(Routes.FIT_CREATOR) { FitCreatorScreen() }
             composable(Routes.CLOSET) { ClosetScreen() }
+            composable(Routes.MANAGE_SUBSCRIPTION) { PremiumScreen() }
+
 
             composable(Routes.PROFILE) {
                 ProfileScreen(
@@ -165,7 +168,12 @@ fun ClosetlyApp() {
                         navController.navigate(route) {
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    onPremiumClick = {
+                        navController.navigate(Routes.MANAGE_SUBSCRIPTION) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
 

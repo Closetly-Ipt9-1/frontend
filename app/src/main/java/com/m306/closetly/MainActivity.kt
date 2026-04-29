@@ -7,7 +7,6 @@ import com.google.firebase.FirebaseApp
 import com.m306.closetly.auth.ui.LoginScreen
 import com.m306.closetly.navigation.ClosetlyApp
 
-
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
