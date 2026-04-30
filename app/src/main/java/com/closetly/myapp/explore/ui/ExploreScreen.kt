@@ -54,6 +54,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
+import com.closetly.myapp.tags.model.PredefinedTags
+import com.closetly.myapp.tags.ui.TagChip
+import androidx.compose.foundation.lazy.LazyRow
 
 data class ExploreOutfit(
     val id: String,
@@ -66,7 +69,8 @@ data class ExploreOutfit(
     val likedBy: List<String>,
     val saveCount: Int,
     val savedBy: List<String>,
-    val createdAt: Long
+    val createdAt: Long,
+    val tags: List<String> = emptyList()
 )
 
 data class OutfitComment(
@@ -88,6 +92,7 @@ fun ExploreScreen() {
     var outfits by remember { mutableStateOf<List<ExploreOutfit>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
+    var filterTagIds by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         seedPlaceholderOutfitsIfNeeded(firestore)
@@ -118,7 +123,8 @@ fun ExploreScreen() {
                             likedBy = (document.get("likedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
                             saveCount = document.getLong("saveCount")?.toInt() ?: 0,
                             savedBy = (document.get("savedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
-                            createdAt = document.getLong("createdAt") ?: 0L
+                            createdAt = document.getLong("createdAt") ?: 0L,
+                            tags = (document.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                         )
                     }
                     ?.sortedByDescending { it.createdAt }
@@ -175,6 +181,9 @@ fun ExploreScreen() {
         }
 
         else -> {
+            val displayedOutfits = if (filterTagIds.isEmpty()) outfits
+            else outfits.filter { outfit -> filterTagIds.all { it in outfit.tags } }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -196,10 +205,36 @@ fun ExploreScreen() {
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(PredefinedTags.ALL) { tag ->
+                                TagChip(
+                                    tag = tag,
+                                    selected = tag.id in filterTagIds,
+                                    onClick = {
+                                        filterTagIds = if (tag.id in filterTagIds)
+                                            filterTagIds - tag.id
+                                        else
+                                            filterTagIds + tag.id
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 
-                items(outfits, key = { it.id }) { outfit ->
+                if (displayedOutfits.isEmpty()) {
+                    item {
+                        Text(
+                            text = "Keine Outfits für die ausgewählten Tags.",
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                items(displayedOutfits, key = { it.id }) { outfit ->
                     ExploreOutfitCard(
                         outfit = outfit,
                         currentUserId = currentUserId,

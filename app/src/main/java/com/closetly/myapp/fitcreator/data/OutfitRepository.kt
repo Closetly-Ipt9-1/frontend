@@ -16,6 +16,7 @@ class OutfitRepository {
         clothingItems: List<ClothingItemUi>,
         isPublic: Boolean,
         username: String,
+        tags: List<String> = emptyList(),
         onSuccess: (Outfit) -> Unit,
         onError: (Exception) -> Unit
     ) {
@@ -49,7 +50,8 @@ class OutfitRepository {
             "likedBy" to emptyList<String>(),
             "saveCount" to 0,
             "savedBy" to emptyList<String>(),
-            "createdAt" to createdAt
+            "createdAt" to createdAt,
+            "tags" to tags
         )
 
         db.collection("outfits")
@@ -68,7 +70,8 @@ class OutfitRepository {
                         likedBy = emptyList(),
                         saveCount = 0,
                         savedBy = emptyList(),
-                        createdAt = createdAt
+                        createdAt = createdAt,
+                        tags = tags
                     )
                 )
             }
@@ -126,7 +129,8 @@ class OutfitRepository {
                             likedBy = (document.get("likedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
                             saveCount = document.getLong("saveCount")?.toInt() ?: 0,
                             savedBy = (document.get("savedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
-                            createdAt = document.getLong("createdAt") ?: 0
+                            createdAt = document.getLong("createdAt") ?: 0,
+                            tags = (document.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                         )
                     } catch (e: Exception) {
                         null
