@@ -17,15 +17,15 @@ detekt {
 }
 
 android {
-    namespace = "com.m306.closetly"
+    namespace = "com.closetly.myapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.m306.closetly"
+        applicationId = "com.closetly.myapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.1.1"
 
         val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
         buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
@@ -83,6 +83,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.android.billingclient:billing:8.3.0")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
