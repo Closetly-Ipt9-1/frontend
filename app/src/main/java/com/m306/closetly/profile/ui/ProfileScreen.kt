@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +53,8 @@ import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.storage.FirebaseStorage
+import com.m306.closetly.premium.data.PremiumAccessRepository
+import com.m306.closetly.premium.model.SubscriptionStatus
 import com.m306.closetly.profile.model.Avatar
 import com.m306.closetly.profile.viewmodel.ProfileViewModel
 import java.io.File
@@ -71,8 +74,10 @@ fun ProfileScreen(
     val auth = FirebaseAuth.getInstance()
     val storage = FirebaseStorage.getInstance()
     val user = auth.currentUser
+    val premiumAccessRepository = remember { PremiumAccessRepository() }
 
     val avatar by viewModel.avatar.collectAsState()
+    var subscriptionStatus by remember { mutableStateOf(SubscriptionStatus()) }
 
     var photoUrl: String? by remember(user?.photoUrl) {
         mutableStateOf(user?.photoUrl?.toString())
@@ -128,6 +133,13 @@ fun ProfileScreen(
     val displayName = user?.displayName?.takeIf { it.isNotBlank() } ?: "Kein Anzeigename"
     val email = user?.email ?: "Keine E-Mail"
     val uid = user?.uid ?: "Keine UID"
+
+    LaunchedEffect(Unit) {
+        premiumAccessRepository.getSubscriptionStatus(
+            onSuccess = { subscriptionStatus = it },
+            onError = {}
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -253,13 +265,9 @@ fun ProfileScreen(
             onClick = onPremiumClick,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(imageVector = Icons.Default.Edit, contentDescription = "Mange premium")
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "Manage premium")
             Spacer(modifier = Modifier.width(8.dp))
-            if (true){
-                Text("Buy Premium")
-            }else{
-                Text("Manage your abo")
-            }
+            Text(if (subscriptionStatus.isPremium) "Manage subscription" else "Buy Premium")
 
         }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.m306.closetly.closet.data.ClosetRepository
 import com.m306.closetly.closet.model.ClothingItemUi
+import com.m306.closetly.premium.data.PremiumAccessRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 class ClosetViewModel : ViewModel() {
 
     private val repository = ClosetRepository()
+    private val premiumAccessRepository = PremiumAccessRepository()
 
     private val _clothes = MutableStateFlow<List<ClothingItemUi>>(emptyList())
     val clothes: StateFlow<List<ClothingItemUi>> = _clothes
@@ -76,22 +78,30 @@ class ClosetViewModel : ViewModel() {
         _isBusy.value = true
         _message.value = ""
 
-        repository.saveClothingItem(
-            imageUri = imageUri,
-            category = category,
-            color = color,
-            brand = brand,
-            size = size,
-            onSuccess = { newItem ->
-                _clothes.value = listOf(newItem) + _clothes.value
+        premiumAccessRepository.canAddClothingItem { canAdd, reason ->
+            if (!canAdd) {
                 _isBusy.value = false
-                _message.value = "Saved!"
-            },
-            onError = { exception ->
-                _isBusy.value = false
-                _message.value = exception.message ?: "Error"
+                _message.value = reason ?: "Upgrade to Premium to save more clothing items."
+                return@canAddClothingItem
             }
-        )
+
+            repository.saveClothingItem(
+                imageUri = imageUri,
+                category = category,
+                color = color,
+                brand = brand,
+                size = size,
+                onSuccess = { newItem ->
+                    _clothes.value = listOf(newItem) + _clothes.value
+                    _isBusy.value = false
+                    _message.value = "Saved!"
+                },
+                onError = { exception ->
+                    _isBusy.value = false
+                    _message.value = exception.message ?: "Error"
+                }
+            )
+        }
     }
 
     fun deleteClothingItem(itemId: String) {

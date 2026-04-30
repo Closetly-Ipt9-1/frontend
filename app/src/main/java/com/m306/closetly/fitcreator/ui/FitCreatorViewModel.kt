@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import com.m306.closetly.closet.model.ClothingItemUi
 import com.m306.closetly.fitcreator.data.OutfitRepository
 import com.m306.closetly.fitcreator.model.Outfit
+import com.m306.closetly.premium.data.PremiumAccessRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class FitCreatorViewModel : ViewModel() {
 
     private val repository = OutfitRepository()
+    private val premiumAccessRepository = PremiumAccessRepository()
 
     private val _selectedItems = MutableStateFlow<List<ClothingItemUi>>(emptyList())
     val selectedItems: StateFlow<List<ClothingItemUi>> = _selectedItems
@@ -74,24 +76,34 @@ class FitCreatorViewModel : ViewModel() {
 
         _isLoading.value = true
 
-        repository.saveOutfit(
-            caption = caption,
-            imageUrl = imageUrl,
-            clothingItems = _selectedItems.value,
-            isPublic = isPublic,
-            username = username,
-            onSuccess = {
+        premiumAccessRepository.canAddOutfit { canAdd, reason ->
+            if (!canAdd) {
                 _isLoading.value = false
-                _selectedItems.value = emptyList()
-                onSuccess(it)
-            },
-            onError = {
-                _isLoading.value = false
-                val errorMsg = it.message ?: "Fehler beim Speichern"
-                _errorMessage.value = errorMsg
-                onError(errorMsg)
+                val message = reason ?: "Upgrade to Premium to save more outfits."
+                _errorMessage.value = message
+                onError(message)
+                return@canAddOutfit
             }
-        )
+
+            repository.saveOutfit(
+                caption = caption,
+                imageUrl = imageUrl,
+                clothingItems = _selectedItems.value,
+                isPublic = isPublic,
+                username = username,
+                onSuccess = {
+                    _isLoading.value = false
+                    _selectedItems.value = emptyList()
+                    onSuccess(it)
+                },
+                onError = {
+                    _isLoading.value = false
+                    val errorMsg = it.message ?: "Error while saving"
+                    _errorMessage.value = errorMsg
+                    onError(errorMsg)
+                }
+            )
+        }
     }
 
     fun loadMyOutfits() {
