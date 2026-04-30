@@ -22,20 +22,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.m306.closetly.closet.func.getColorFromName
 import com.m306.closetly.closet.model.ClothingItemUi
+import com.m306.closetly.BuildConfig
+import com.m306.closetly.closet.data.RembgApiHelper
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClosetScreen() {
     val viewModel: ClosetViewModel = viewModel()
+    val context = LocalContext.current
 
     val filteredClothes by viewModel.filteredClothes.collectAsState()
     val isBusy by viewModel.isBusy.collectAsState()
     val message by viewModel.message.collectAsState()
+
 
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val selectedColor by viewModel.selectedColor.collectAsState()
@@ -129,16 +135,46 @@ fun ClosetScreen() {
                                 brand.isNotBlank() &&
                                 size.isNotBlank(),
                         onClick = {
-                            val image = selectedImageUri ?: return@Button
+                            val uri = selectedImageUri ?: return@Button
 
-                            viewModel.saveClothingItem(
-                                imageUri = image,
-                                category = category,
-                                color = color,
-                                brand = brand,
-                                size = size
+                            val inputStream = context.contentResolver.openInputStream(uri)
+
+                            if (inputStream == null) {
+                                println("ERROR: Cannot read image")
+                                return@Button
+                            }
+
+                            val tempFile = java.io.File.createTempFile("upload", ".jpg", context.cacheDir)
+                            tempFile.outputStream().use { fileOut ->
+                                inputStream.copyTo(fileOut)
+                            }
+
+                            // 🔹 Background entfernen
+                            RembgApiHelper.removeBackground(
+                                imageFile = tempFile,
+                                apiKey = BuildConfig.RMBG_API_KEY,
+                                onSuccess = { pngBytes ->
+
+                                    println("SUCCESS: Background removed")
+
+                                    // 👉 HIER kannst du später Firebase Upload machen
+
+                                    // Für jetzt: normal speichern (ohne PNG)
+                                    viewModel.saveClothingItem(
+                                        imageUri = uri,
+                                        category = category,
+                                        color = color,
+                                        brand = brand,
+                                        size = size
+                                    )
+
+                                },
+                                onError = { error ->
+                                    println("ERROR: $error")
+                                }
                             )
 
+                            // Reset UI
                             selectedImageUri = null
                             category = ""
                             color = ""
@@ -148,9 +184,8 @@ fun ClosetScreen() {
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Save")
+                        Text("Save (AI Cut)")
                     }
-
                     OutlinedButton(
                         onClick = {
                             selectedImageUri = null

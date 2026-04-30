@@ -27,11 +27,15 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
+        buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -69,16 +73,16 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("com.google.firebase:firebase-storage")
-    implementation("io.coil-kt:coil-compose:2.7.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("com.google.firebase:firebase-firestore")
+
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore:26.1.2")
-
+    implementation("com.google.firebase:firebase-storage")
+    implementation("com.google.firebase:firebase-firestore")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
