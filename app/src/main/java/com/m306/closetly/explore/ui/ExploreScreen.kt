@@ -16,13 +16,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -30,6 +35,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +48,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.m306.closetly.auth.func.AuthManager
@@ -60,10 +69,21 @@ data class ExploreOutfit(
     val createdAt: Long
 )
 
+data class OutfitComment(
+    val id: String,
+    val userId: String,
+    val username: String,
+    val text: String,
+    val likeCount: Int,
+    val likedBy: List<String>,
+    val createdAt: Long
+)
+
 @Composable
 fun ExploreScreen() {
     val firestore = remember { FirebaseFirestore.getInstance() }
     val currentUserId = AuthManager.getCurrentUserId()
+    val currentUsername = AuthManager.getCurrentUser()?.displayName ?: "Anonymous"
 
     var outfits by remember { mutableStateOf<List<ExploreOutfit>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -183,6 +203,8 @@ fun ExploreScreen() {
                     ExploreOutfitCard(
                         outfit = outfit,
                         currentUserId = currentUserId,
+                        currentUsername = currentUsername,
+                        firestore = firestore,
                         onLikeClick = {
                             if (currentUserId != null) {
                                 toggleLike(
@@ -216,11 +238,40 @@ fun ExploreScreen() {
 fun ExploreOutfitCard(
     outfit: ExploreOutfit,
     currentUserId: String?,
+    currentUsername: String,
+    firestore: FirebaseFirestore,
     onLikeClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
     val isLiked = currentUserId != null && outfit.likedBy.contains(currentUserId)
     val isSaved = currentUserId != null && outfit.savedBy.contains(currentUserId)
+
+    var commentsExpanded by remember { mutableStateOf(false) }
+    var comments by remember { mutableStateOf<List<OutfitComment>>(emptyList()) }
+    var commentText by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    DisposableEffect(outfit.id) {
+        val listener = firestore
+            .collection("outfits")
+            .document(outfit.id)
+            .collection("comments")
+            .orderBy("createdAt")
+            .addSnapshotListener { snapshot, _ ->
+                comments = snapshot?.documents?.mapNotNull { doc ->
+                    OutfitComment(
+                        id = doc.id,
+                        userId = doc.getString("userId") ?: "",
+                        username = doc.getString("username") ?: "Unknown",
+                        text = doc.getString("text") ?: "",
+                        likeCount = doc.getLong("likeCount")?.toInt() ?: 0,
+                        likedBy = (doc.get("likedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
+                        createdAt = doc.getLong("createdAt") ?: 0L
+                    )
+                }.orEmpty()
+            }
+        onDispose { listener.remove() }
+    }
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -369,6 +420,158 @@ fun ExploreOutfitCard(
                     )
                 }
             }
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (comments.isEmpty()) "Kommentare" else "${comments.size} Kommentar${if (comments.size != 1) "e" else ""}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { commentsExpanded = !commentsExpanded }) {
+                    Icon(
+                        imageVector = if (commentsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (commentsExpanded) "Ausblenden" else "Anzeigen"
+                    )
+                }
+            }
+
+            if (commentsExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                ) {
+                    if (comments.isEmpty()) {
+                        Text(
+                            text = "Noch keine Kommentare. Sei der Erste!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        comments.forEach { comment ->
+                            CommentItem(
+                                comment = comment,
+                                currentUserId = currentUserId,
+                                onLikeClick = {
+                                    if (currentUserId != null) {
+                                        toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    if (currentUserId != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = commentText,
+                                onValueChange = { commentText = it },
+                                placeholder = { Text("Kommentar schreiben...") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                                keyboardActions = KeyboardActions(
+                                    onSend = {
+                                        if (commentText.isNotBlank()) {
+                                            addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
+                                            commentText = ""
+                                            keyboardController?.hide()
+                                        }
+                                    }
+                                ),
+                                maxLines = 3,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            IconButton(
+                                onClick = {
+                                    if (commentText.isNotBlank()) {
+                                        addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
+                                        commentText = ""
+                                        keyboardController?.hide()
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Send,
+                                    contentDescription = "Senden",
+                                    tint = if (commentText.isNotBlank()) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentItem(
+    comment: OutfitComment,
+    currentUserId: String?,
+    onLikeClick: () -> Unit
+) {
+    val isLiked = currentUserId != null && comment.likedBy.contains(currentUserId)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = comment.username,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = comment.text,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (comment.likeCount > 0) {
+                Text(
+                    text = "${comment.likeCount}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(
+                onClick = onLikeClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Like Kommentar",
+                    modifier = Modifier.size(16.dp),
+                    tint = if (isLiked) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
         }
     }
 }
@@ -481,6 +684,65 @@ private fun toggleSave(
             mapOf(
                 "savedBy" to savedBy,
                 "saveCount" to saveCount
+            )
+        )
+    }
+}
+
+private fun addComment(
+    firestore: FirebaseFirestore,
+    outfitId: String,
+    userId: String,
+    username: String,
+    text: String
+) {
+    firestore
+        .collection("outfits")
+        .document(outfitId)
+        .collection("comments")
+        .add(
+            mapOf(
+                "userId" to userId,
+                "username" to username,
+                "text" to text,
+                "likeCount" to 0,
+                "likedBy" to emptyList<String>(),
+                "createdAt" to System.currentTimeMillis()
+            )
+        )
+}
+
+private fun toggleCommentLike(
+    firestore: FirebaseFirestore,
+    outfitId: String,
+    commentId: String,
+    userId: String
+) {
+    val docRef = firestore
+        .collection("outfits")
+        .document(outfitId)
+        .collection("comments")
+        .document(commentId)
+
+    firestore.runTransaction { transaction ->
+        val snapshot = transaction.get(docRef)
+        val likedBy = (snapshot.get("likedBy") as? List<*>)?.filterIsInstance<String>()?.toMutableList()
+            ?: mutableListOf()
+        var likeCount = snapshot.getLong("likeCount")?.toInt() ?: 0
+
+        if (likedBy.contains(userId)) {
+            likedBy.remove(userId)
+            if (likeCount > 0) likeCount -= 1
+        } else {
+            likedBy.add(userId)
+            likeCount += 1
+        }
+
+        transaction.update(
+            docRef,
+            mapOf(
+                "likedBy" to likedBy,
+                "likeCount" to likeCount
             )
         )
     }
