@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.m306.closetly.app-mergeDebugResources-82:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\6b04ed482a7ed42ce531f05c20d01bf9\\transformed\\appcompat-1.7.1\\res\\values-port\\values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}
