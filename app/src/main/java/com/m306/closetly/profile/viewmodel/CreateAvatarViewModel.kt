@@ -35,13 +35,14 @@ class CreateAvatarViewModel : ViewModel() {
     fun saveDefaultAvatar(gender: String, hair: String, skin: String) {
         viewModelScope.launch {
             _isLoading.value = true
+            val imageUrl = repo.getDefaultAvatarUrl(gender, skin, hair)
             repo.saveAvatar(
                 Avatar(
                     type = "default",
                     gender = gender,
                     hairColor = hair,
                     skinColor = skin,
-                    imageUrl = ""
+                    imageUrl = imageUrl
                 )
             )
             _isLoading.value = false

@@ -64,7 +64,8 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onSavedOutfitsClick: () -> Unit,
     onCreateAvatarClick: () -> Unit,
-    onCustomizeAvatarClick: (avatarType: String) -> Unit
+    onCustomizeAvatarClick: (avatarType: String) -> Unit,
+    onSwitchToCustomAvatarClick: () -> Unit
 ) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
@@ -137,80 +138,37 @@ fun ProfileScreen(
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        when {
-            avatar?.type == "custom" && !avatar?.frontImageUrl.isNullOrBlank() -> {
-                AsyncImage(
-                    model = avatar!!.frontImageUrl,
-                    contentDescription = "Custom Avatar",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
-            }
-            avatar?.type == "default" -> {
-                DefaultAvatarPreview(avatar = avatar!!)
-            }
-            !photoUrl.isNullOrBlank() -> {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = "Profilbild",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
-            }
-            else -> {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Standard-Profilbild",
-                        modifier = Modifier.size(56.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (avatar?.type == "default") {
-            AvatarSettingsSummary(avatar = avatar!!)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        if (isUploading) {
-            CircularProgressIndicator()
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        if (avatar == null) {
-            Button(
-                onClick = onCreateAvatarClick,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Avatar erstellen")
-            }
+        // Profilbild (unabhängig vom Avatar)
+        if (!photoUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = photoUrl,
+                contentDescription = "Profilbild",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+            )
         } else {
-            OutlinedButton(
-                onClick = { onCustomizeAvatarClick(avatar!!.type) },
-                modifier = Modifier.fillMaxWidth()
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Avatar anpassen",
-                    modifier = Modifier.size(18.dp)
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Standard-Profilbild",
+                    modifier = Modifier.size(56.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Avatar anpassen")
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        if (isUploading) {
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         OutlinedButton(
             onClick = { showSourceDialog = true },
@@ -276,6 +234,100 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text("Ausloggen")
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        HorizontalDivider()
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Avatar-Bereich
+        Text(
+            text = "Mein Avatar",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when {
+            avatar?.type == "custom" && !avatar?.frontImageUrl.isNullOrBlank() -> {
+                AsyncImage(
+                    model = avatar!!.frontImageUrl,
+                    contentDescription = "Custom Avatar",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                )
+            }
+            avatar?.type == "default" && !avatar!!.imageUrl.isNullOrBlank() -> {
+                AsyncImage(
+                    model = avatar!!.imageUrl,
+                    contentDescription = "Standard Avatar",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                )
+            }
+            avatar?.type == "default" -> {
+                DefaultAvatarPreview(avatar = avatar!!)
+            }
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Kein Avatar",
+                        modifier = Modifier.size(56.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        if (avatar?.type == "default") {
+            Spacer(modifier = Modifier.height(12.dp))
+            AvatarSettingsSummary(avatar = avatar!!)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (avatar == null) {
+            Button(
+                onClick = onCreateAvatarClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Avatar erstellen")
+            }
+        } else {
+            OutlinedButton(
+                onClick = { onCustomizeAvatarClick(avatar!!.type) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Avatar anpassen",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Avatar anpassen")
+            }
+            if (avatar!!.type == "default") {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onSwitchToCustomAvatarClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Zu Custom Avatar wechseln")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 
     if (showSourceDialog) {
@@ -340,11 +392,8 @@ fun ProfileScreen(
 @Composable
 private fun DefaultAvatarPreview(avatar: Avatar) {
     val skinColor = when (avatar.skinColor) {
-        "sehr hell" -> Color(0xFFFEE4C4)
         "hell" -> Color(0xFFFFDBAC)
-        "mittel-hell" -> Color(0xFFD4A574)
         "mittel" -> Color(0xFFC68642)
-        "mittel-dunkel" -> Color(0xFF8D5524)
         "dunkel" -> Color(0xFF4A2912)
         else -> Color(0xFFFFDBAC)
     }
