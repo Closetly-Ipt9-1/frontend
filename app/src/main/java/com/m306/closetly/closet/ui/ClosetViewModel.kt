@@ -1,5 +1,6 @@
 package com.m306.closetly.closet.ui
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -45,9 +46,9 @@ class ClosetViewModel : ViewModel() {
     ) { clothes, category, color, brand, size ->
         clothes.filter { item ->
             (category == null || item.category == category) &&
-            (color == null || item.color == color) &&
-            (brand == null || item.brand == brand) &&
-            (size == null || item.size == size)
+                    (color == null || item.color == color) &&
+                    (brand == null || item.brand == brand) &&
+                    (size == null || item.size == size)
         }
     }.stateIn(
         scope = viewModelScope,
@@ -66,7 +67,8 @@ class ClosetViewModel : ViewModel() {
         )
     }
 
-    fun saveClothingItem(
+    fun saveClothingItemWithRemovedBackground(
+        context: Context,
         imageUri: Uri,
         category: String,
         color: String,
@@ -74,9 +76,10 @@ class ClosetViewModel : ViewModel() {
         size: String
     ) {
         _isBusy.value = true
-        _message.value = ""
+        _message.value = "Removing background..."
 
-        repository.saveClothingItem(
+        repository.saveClothingItemWithRemovedBackground(
+            context = context,
             imageUri = imageUri,
             category = category,
             color = color,
@@ -85,7 +88,7 @@ class ClosetViewModel : ViewModel() {
             onSuccess = { newItem ->
                 _clothes.value = listOf(newItem) + _clothes.value
                 _isBusy.value = false
-                _message.value = "Saved!"
+                _message.value = "Saved with removed background!"
             },
             onError = { exception ->
                 _isBusy.value = false
