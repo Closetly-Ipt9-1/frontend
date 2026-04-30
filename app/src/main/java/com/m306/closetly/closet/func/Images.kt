@@ -35,4 +35,30 @@ class Images {
                 onError(exception)
             }
     }
+
+    fun uploadClothesImageBytes(
+        imageBytes: ByteArray,
+        onSuccess: (String) -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        val userId = auth.currentUser?.uid
+
+        if (userId == null) {
+            onError(Exception("User not logged in"))
+            return
+        }
+
+        val fileName = UUID.randomUUID().toString()
+        val ref = storage.reference.child("users/$userId/clothes/$fileName.png")
+
+        ref.putBytes(imageBytes)
+            .addOnSuccessListener {
+                ref.downloadUrl.addOnSuccessListener { uri ->
+                    onSuccess(uri.toString())
+                }
+            }
+            .addOnFailureListener { exception ->
+                onError(exception)
+            }
+    }
 }

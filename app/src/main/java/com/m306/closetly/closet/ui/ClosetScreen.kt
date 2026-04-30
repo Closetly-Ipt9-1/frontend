@@ -137,44 +137,15 @@ fun ClosetScreen() {
                         onClick = {
                             val uri = selectedImageUri ?: return@Button
 
-                            val inputStream = context.contentResolver.openInputStream(uri)
-
-                            if (inputStream == null) {
-                                println("ERROR: Cannot read image")
-                                return@Button
-                            }
-
-                            val tempFile = java.io.File.createTempFile("upload", ".jpg", context.cacheDir)
-                            tempFile.outputStream().use { fileOut ->
-                                inputStream.copyTo(fileOut)
-                            }
-
-                            // 🔹 Background entfernen
-                            RembgApiHelper.removeBackground(
-                                imageFile = tempFile,
-                                apiKey = BuildConfig.RMBG_API_KEY,
-                                onSuccess = { pngBytes ->
-
-                                    println("SUCCESS: Background removed")
-
-                                    // 👉 HIER kannst du später Firebase Upload machen
-
-                                    // Für jetzt: normal speichern (ohne PNG)
-                                    viewModel.saveClothingItem(
-                                        imageUri = uri,
-                                        category = category,
-                                        color = color,
-                                        brand = brand,
-                                        size = size
-                                    )
-
-                                },
-                                onError = { error ->
-                                    println("ERROR: $error")
-                                }
+                            viewModel.saveClothingItemWithRemovedBackground(
+                                context = context,
+                                imageUri = uri,
+                                category = category,
+                                color = color,
+                                brand = brand,
+                                size = size
                             )
 
-                            // Reset UI
                             selectedImageUri = null
                             category = ""
                             color = ""
