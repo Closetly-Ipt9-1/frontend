@@ -17,15 +17,15 @@ detekt {
 }
 
 android {
-    namespace = "com.m306.closetly"
+    namespace = "com.closetly.myapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.m306.closetly"
+        applicationId = "com.closetly.myapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
