@@ -10,13 +10,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -36,7 +37,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,7 +50,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -59,7 +61,7 @@ import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
 import com.closetly.myapp.tags.model.PredefinedTags
-import com.closetly.myapp.tags.ui.TagChip
+import com.closetly.myapp.tags.model.Tag
 import androidx.compose.foundation.lazy.LazyRow
 
 data class ExploreOutfit(
@@ -212,47 +214,18 @@ fun ExploreScreen() {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp, bottom = 4.dp)
-                            .clip(MaterialTheme.shapes.extraLarge)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.surface,
-                                        MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                )
-                            )
-                            .padding(20.dp)
-                    ) {
-                        Text(
-                            text = "Explore",
-                            style = MaterialTheme.typography.headlineLarge
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Discover public outfits",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(PredefinedTags.ALL) { tag ->
-                                TagChip(
-                                    tag = tag,
-                                    selected = tag.id in filterTagIds,
-                                    onClick = {
-                                        filterTagIds = if (tag.id in filterTagIds)
-                                            filterTagIds - tag.id
-                                        else
-                                            filterTagIds + tag.id
-                                    }
-                                )
+                    ExploreHeader(
+                        visibleCount = displayedOutfits.size,
+                        selectedTagIds = filterTagIds,
+                        onClearTags = { filterTagIds = emptyList() },
+                        onTagToggle = { tagId ->
+                            filterTagIds = if (tagId in filterTagIds) {
+                                filterTagIds - tagId
+                            } else {
+                                filterTagIds + tagId
                             }
                         }
-                    }
+                    )
                 }
 
                 if (displayedOutfits.isEmpty()) {
@@ -302,6 +275,193 @@ fun ExploreScreen() {
 }
 
 @Composable
+private fun ExploreHeader(
+    visibleCount: Int,
+    selectedTagIds: List<String>,
+    onClearTags: () -> Unit,
+    onTagToggle: (String) -> Unit
+) {
+    var filterExpanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 4.dp)
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            )
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Text(
+                    text = "Explore",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Community-Looks entdecken und nach Stimmung filtern.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Surface(
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                contentColor = MaterialTheme.colorScheme.primary,
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text(
+                    text = "$visibleCount Looks",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                )
+            }
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.background.copy(alpha = 0.34f)
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.large)
+                        .clickable { filterExpanded = !filterExpanded }
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Filter",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = if (selectedTagIds.isEmpty()) {
+                                "Alle Looks anzeigen"
+                            } else {
+                                "${selectedTagIds.size} Filter aktiv"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = if (filterExpanded) {
+                            Icons.Default.KeyboardArrowUp
+                        } else {
+                            Icons.Default.KeyboardArrowDown
+                        },
+                        contentDescription = if (filterExpanded) "Filter schließen" else "Filter öffnen",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (filterExpanded) {
+                    ExploreFilterChip(
+                        label = "Alle",
+                        selected = selectedTagIds.isEmpty(),
+                        onClick = onClearTags
+                    )
+                    ExploreTagRow(
+                        label = "Saison",
+                        tags = PredefinedTags.SEASON,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = onTagToggle
+                    )
+                    ExploreTagRow(
+                        label = "Anlass",
+                        tags = PredefinedTags.OCCASION,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = onTagToggle
+                    )
+                    ExploreTagRow(
+                        label = "Stil",
+                        tags = PredefinedTags.STYLE,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = onTagToggle
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExploreTagRow(
+    label: String,
+    tags: List<Tag>,
+    selectedTagIds: List<String>,
+    onTagToggle: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(tags) { tag ->
+                ExploreFilterChip(
+                    label = tag.name,
+                    selected = tag.id in selectedTagIds,
+                    onClick = { onTagToggle(tag.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExploreFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)
+        )
+    }
+}
+
+@Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 fun ExploreOutfitCard(
     outfit: ExploreOutfit,
@@ -314,7 +474,7 @@ fun ExploreOutfitCard(
     val isLiked = currentUserId != null && outfit.likedBy.contains(currentUserId)
     val isSaved = currentUserId != null && outfit.savedBy.contains(currentUserId)
 
-    var commentsExpanded by remember { mutableStateOf(false) }
+    var commentsExpanded by remember { mutableStateOf(true) }
     var showAllComments by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<OutfitComment>>(emptyList()) }
     var commentText by remember { mutableStateOf("") }
@@ -561,7 +721,7 @@ fun ExploreOutfitCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 18.dp)
                 ) {
                     if (comments.isEmpty()) {
                         Text(
@@ -598,49 +758,89 @@ fun ExploreOutfitCard(
 
                 if (currentUserId != null) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = commentText,
-                            onValueChange = { commentText = it },
-                            placeholder = { Text("Kommentar schreiben") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(
-                                onSend = {
-                                    if (commentText.isNotBlank()) {
-                                        addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
-                                        commentText = ""
-                                        keyboardController?.hide()
-                                    }
-                                }
-                            ),
-                            maxLines = 3,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        IconButton(
-                            onClick = {
-                                if (commentText.isNotBlank()) {
-                                    addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
-                                    commentText = ""
-                                    keyboardController?.hide()
-                                }
+                    CommentInputBar(
+                        value = commentText,
+                        onValueChange = { commentText = it },
+                        onSend = {
+                            if (commentText.isNotBlank()) {
+                                addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
+                                commentText = ""
+                                keyboardController?.hide()
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Send,
-                                contentDescription = "Senden",
-                                tint = if (commentText.isNotBlank()) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentInputBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 54.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+                textStyle = TextStyle(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { onSend() }),
+                maxLines = 3,
+                decorationBox = { innerTextField ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (value.isBlank()) {
+                            Text(
+                                text = "Kommentar schreiben",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        innerTextField()
                     }
+                }
+            )
+
+            Surface(
+                modifier = Modifier.size(42.dp),
+                shape = CircleShape,
+                color = if (value.isNotBlank()) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.background.copy(alpha = 0.42f)
+                },
+                contentColor = if (value.isNotBlank()) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            ) {
+                IconButton(onClick = onSend) {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = "Senden",
+                        modifier = Modifier.size(19.dp)
+                    )
                 }
             }
         }
