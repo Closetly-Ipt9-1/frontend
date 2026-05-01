@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,9 +21,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
@@ -31,7 +32,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -81,36 +81,36 @@ fun ProfileScreen(
     val storage = FirebaseStorage.getInstance()
     val user = auth.currentUser
     val premiumAccessRepository = remember { PremiumAccessRepository() }
-
     val avatar by viewModel.avatar.collectAsState()
-    var subscriptionStatus by remember { mutableStateOf(SubscriptionStatus()) }
 
-    var photoUrl: String? by remember(user?.photoUrl) {
-        mutableStateOf(user?.photoUrl?.toString())
-    }
+    var subscriptionStatus by remember { mutableStateOf(SubscriptionStatus()) }
+    var photoUrl by remember(user?.photoUrl) { mutableStateOf(user?.photoUrl?.toString()) }
     var isUploading by remember { mutableStateOf(false) }
     var showSourceDialog by remember { mutableStateOf(false) }
     var showPreviewDialog by remember { mutableStateOf(false) }
     var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    val displayName = user?.displayName?.takeIf { it.isNotBlank() } ?: "Closetly User"
+    val email = user?.email ?: "Keine E-Mail"
+
     fun uploadProfileImage(selectedImageUri: Uri) {
         val currentUser = auth.currentUser ?: return
-        val userId = currentUser.uid
         isUploading = true
-        val fileName = UUID.randomUUID().toString()
-        val imageRef = storage.reference.child("users/$userId/profile_pictures/$fileName.jpg")
+        val imageRef = storage.reference.child(
+            "users/${currentUser.uid}/profile_pictures/${UUID.randomUUID()}.jpg"
+        )
         imageRef.putFile(selectedImageUri)
             .addOnSuccessListener {
                 imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                    val profileUpdates = UserProfileChangeRequest.Builder()
+                    val updates = UserProfileChangeRequest.Builder()
                         .setPhotoUri(downloadUri)
                         .build()
-                    currentUser.updateProfile(profileUpdates)
+                    currentUser.updateProfile(updates)
                         .addOnSuccessListener {
                             photoUrl = downloadUri.toString()
-                            isUploading = false
                             pendingImageUri = null
+                            isUploading = false
                         }
                         .addOnFailureListener { isUploading = false }
                 }.addOnFailureListener { isUploading = false }
@@ -120,7 +120,7 @@ fun ProfileScreen(
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { selectedImageUri: Uri? ->
+    ) { selectedImageUri ->
         if (selectedImageUri != null) {
             pendingImageUri = selectedImageUri
             showPreviewDialog = true
@@ -136,9 +136,6 @@ fun ProfileScreen(
         }
     }
 
-    val displayName = user?.displayName?.takeIf { it.isNotBlank() } ?: "Kein Anzeigename"
-    val email = user?.email ?: "Keine E-Mail"
-
     LaunchedEffect(Unit) {
         premiumAccessRepository.getSubscriptionStatus(
             onSuccess = { subscriptionStatus = it },
@@ -152,8 +149,8 @@ fun ProfileScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 18.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Text(
             text = "Profil",
@@ -161,67 +158,40 @@ fun ProfileScreen(
             fontWeight = FontWeight.Bold
         )
 
-        ProfileHeroCard(
+        ProfileHero(
             photoUrl = photoUrl,
             displayName = displayName,
             email = email,
             isUploading = isUploading,
+            isPremium = subscriptionStatus.isPremium,
             onChangePhoto = { showSourceDialog = true }
         )
 
-        AccountCard(displayName = displayName, email = email)
+        ProfileStatsRow(
+            isPremium = subscriptionStatus.isPremium,
+            hasAvatar = avatar != null
+        )
 
-        Button(
-            onClick = onPremiumClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = MaterialTheme.shapes.large
-        ) {
-            Text(if (subscriptionStatus.isPremium) "Abo verwalten" else "Premium freischalten")
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ProfileActionButton(
-                    text = "Profil bearbeiten",
-                    icon = Icons.Default.Edit,
-                    onClick = onEditClick
-                )
-                ProfileActionButton(
-                    text = "Gespeicherte Outfits",
-                    icon = null,
-                    onClick = onSavedOutfitsClick
-                )
-                ProfileActionButton(
-                    text = "Ausloggen",
-                    icon = Icons.Default.ExitToApp,
-                    onClick = onLogoutClick
-                )
-            }
-        }
-
-        AvatarCard(
+        AvatarPanel(
             avatar = avatar,
             onCreateAvatarClick = onCreateAvatarClick,
             onCustomizeAvatarClick = onCustomizeAvatarClick
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        ProfileActionsPanel(
+            isPremium = subscriptionStatus.isPremium,
+            onEditClick = onEditClick,
+            onSavedOutfitsClick = onSavedOutfitsClick,
+            onPremiumClick = onPremiumClick,
+            onLogoutClick = onLogoutClick
+        )
     }
 
     if (showSourceDialog) {
         AlertDialog(
             onDismissRequest = { showSourceDialog = false },
             title = { Text("Profilbild auswählen") },
-            text = { Text("Möchtest du ein Bild aus der Galerie wählen oder mit der Kamera aufnehmen?") },
+            text = { Text("Wähle ein Bild aus der Galerie oder nimm direkt ein neues Foto auf.") },
             confirmButton = {
                 TextButton(onClick = {
                     showSourceDialog = false
@@ -277,64 +247,41 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileHeroCard(
+private fun ProfileHero(
     photoUrl: String?,
     displayName: String,
     email: String,
     isUploading: Boolean,
+    isPremium: Boolean,
     onChangePhoto: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surfaceVariant
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.surface
                         )
                     )
                 )
-                .padding(18.dp),
+                .padding(22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            if (!photoUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = "Profilbild",
-                    modifier = Modifier
-                        .size(112.dp)
-                        .clip(CircleShape)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(112.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Standard-Profilbild",
-                        modifier = Modifier.size(54.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+            ProfilePhoto(photoUrl = photoUrl, isUploading = isUploading, onChangePhoto = onChangePhoto)
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = displayName,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -344,81 +291,140 @@ private fun ProfileHeroCard(
                 )
             }
 
-            if (isUploading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            }
-
-            OutlinedButton(
-                onClick = onChangePhoto,
-                shape = MaterialTheme.shapes.large
+            Surface(
+                shape = CircleShape,
+                color = if (isPremium) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                } else {
+                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f)
+                },
+                contentColor = if (isPremium) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondaryContainer
             ) {
-                Text("Profilbild ändern")
+                Text(
+                    text = if (isPremium) "Premium aktiv" else "Free Account",
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AccountCard(displayName: String, email: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+private fun ProfilePhoto(
+    photoUrl: String?,
+    isUploading: Boolean,
+    onChangePhoto: () -> Unit
+) {
+    Box(contentAlignment = Alignment.BottomEnd) {
+        Box(
+            modifier = Modifier
+                .size(126.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.background)
+                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.75f), CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "Account",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+            if (!photoUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = photoUrl,
+                    contentDescription = "Profilbild",
+                    modifier = Modifier
+                        .size(118.dp)
+                        .clip(CircleShape)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(54.dp)
+                )
+            }
+
+            if (isUploading) {
+                CircularProgressIndicator(modifier = Modifier.size(34.dp))
+            }
+        }
+
+        Surface(
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable(onClick = onChangePhoto),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Profilbild ändern",
+                modifier = Modifier
+                    .padding(10.dp)
+                    .size(18.dp)
             )
-            ProfileInfoItem(title = "Anzeigename", value = displayName)
-            HorizontalDivider()
-            ProfileInfoItem(title = "E-Mail", value = email)
         }
     }
 }
 
 @Composable
-private fun ProfileActionButton(
-    text: String,
-    icon: ImageVector?,
-    onClick: () -> Unit
+private fun ProfileStatsRow(
+    isPremium: Boolean,
+    hasAvatar: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        ProfileStatTile(
+            label = "Status",
+            value = if (isPremium) "Premium" else "Free",
+            modifier = Modifier.weight(1f)
+        )
+        ProfileStatTile(
+            label = "Avatar",
+            value = if (hasAvatar) "Bereit" else "Offen",
+            modifier = Modifier.weight(1f)
+        )
+        ProfileStatTile(
+            label = "Looks",
+            value = "Saved",
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ProfileStatTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 13.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-            }
             Text(
-                text = text,
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = label,
                 style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.weight(1f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
 @Composable
-private fun AvatarCard(
+private fun AvatarPanel(
     avatar: Avatar?,
     onCreateAvatarClick: () -> Unit,
     onCustomizeAvatarClick: () -> Unit
@@ -428,68 +434,35 @@ private fun AvatarCard(
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text(
-                text = "Avatar",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            AvatarPreview(avatar = avatar)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AvatarPreview(avatar = avatar)
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = if (avatar == null) "Noch kein Avatar" else "Dein Avatar",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = if (avatar == null) {
-                            "Erstelle einen Look für dein Profil."
-                        } else {
-                            "Passe deinen Avatar jederzeit an."
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            if (avatar != null) {
-                AvatarSettingsSummary(avatar = avatar)
-            }
-
-            if (avatar == null) {
-                Button(
-                    onClick = onCreateAvatarClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large
-                ) {
-                    Text("Avatar erstellen")
-                }
-            } else {
+                Text(
+                    text = if (avatar == null) "Avatar erstellen" else "Avatar bearbeiten",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (avatar == null) {
+                        "Baue deinen Closetly-Look für dein Profil."
+                    } else {
+                        avatar.summaryText()
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 OutlinedButton(
-                    onClick = onCustomizeAvatarClick,
-                    modifier = Modifier.fillMaxWidth(),
+                    onClick = if (avatar == null) onCreateAvatarClick else onCustomizeAvatarClick,
                     shape = MaterialTheme.shapes.large
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Avatar anpassen",
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Avatar anpassen")
+                    Text(if (avatar == null) "Jetzt erstellen" else "Anpassen")
                 }
             }
         }
@@ -497,35 +470,136 @@ private fun AvatarCard(
 }
 
 @Composable
-private fun AvatarPreview(avatar: Avatar?) {
-    when {
-        avatar != null && !avatar.imageUrl.isNullOrBlank() -> {
-            AsyncImage(
-                model = avatar.imageUrl,
-                contentDescription = "Standard Avatar",
-                modifier = Modifier
-                    .size(84.dp)
-                    .clip(CircleShape)
+private fun ProfileActionsPanel(
+    isPremium: Boolean,
+    onEditClick: () -> Unit,
+    onSavedOutfitsClick: () -> Unit,
+    onPremiumClick: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ProfileActionTile(
+                title = "Bearbeiten",
+                subtitle = "Name und Details",
+                icon = Icons.Default.Edit,
+                modifier = Modifier.weight(1f),
+                onClick = onEditClick
+            )
+            ProfileActionTile(
+                title = "Gespeichert",
+                subtitle = "Outfits ansehen",
+                icon = Icons.Default.CheckCircle,
+                modifier = Modifier.weight(1f),
+                onClick = onSavedOutfitsClick
             )
         }
-        avatar != null -> {
-            DefaultAvatarPreview(avatar = avatar, size = 84)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ProfileActionTile(
+                title = if (isPremium) "Premium" else "Upgrade",
+                subtitle = if (isPremium) "Abo verwalten" else "Mehr Features",
+                icon = Icons.Default.CheckCircle,
+                modifier = Modifier.weight(1f),
+                highlighted = true,
+                onClick = onPremiumClick
+            )
+            ProfileActionTile(
+                title = "Logout",
+                subtitle = "Abmelden",
+                icon = Icons.Default.ExitToApp,
+                modifier = Modifier.weight(1f),
+                danger = true,
+                onClick = onLogoutClick
+            )
         }
-        else -> {
-            Box(
-                modifier = Modifier
-                    .size(84.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
+    }
+}
+
+@Composable
+private fun ProfileActionTile(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    highlighted: Boolean = false,
+    danger: Boolean = false,
+    onClick: () -> Unit
+) {
+    val iconColor = when {
+        danger -> MaterialTheme.colorScheme.error
+        highlighted -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.secondary
+    }
+
+    Surface(
+        modifier = modifier
+            .height(118.dp)
+            .clip(MaterialTheme.shapes.large)
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = iconColor.copy(alpha = 0.16f),
+                contentColor = iconColor
             ) {
                 Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Kein Avatar",
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .padding(9.dp)
+                        .size(19.dp)
                 )
             }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AvatarPreview(avatar: Avatar?) {
+    val imageUrl = avatar?.imageUrl
+
+    if (!imageUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = "Avatar",
+            modifier = Modifier
+                .size(86.dp)
+                .clip(CircleShape)
+        )
+    } else if (avatar != null) {
+        DefaultAvatarPreview(avatar = avatar, size = 86)
+    } else {
+        Box(
+            modifier = Modifier
+                .size(86.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(38.dp)
+            )
         }
     }
 }
@@ -571,39 +645,13 @@ private fun DefaultAvatarPreview(avatar: Avatar, size: Int = 120) {
     }
 }
 
-@Composable
-private fun AvatarSettingsSummary(avatar: Avatar) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            if (!avatar.gender.isNullOrBlank()) {
-                Text(
-                    text = avatar.gender.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-            if (!avatar.skinColor.isNullOrBlank()) {
-                Text(
-                    text = "Haut: ${avatar.skinColor}",
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-            if (!avatar.hairColor.isNullOrBlank()) {
-                Text(
-                    text = "Haar: ${avatar.hairColor}",
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-        }
-    }
+private fun Avatar.summaryText(): String {
+    val parts = listOfNotNull(
+        gender?.takeIf { it.isNotBlank() },
+        skinColor?.takeIf { it.isNotBlank() }?.let { "Haut: $it" },
+        hairColor?.takeIf { it.isNotBlank() }?.let { "Haar: $it" }
+    )
+    return parts.joinToString(" · ").ifBlank { "Dein Avatar ist bereit." }
 }
 
 private fun createImageUri(context: Context): Uri {
@@ -612,22 +660,5 @@ private fun createImageUri(context: Context): Uri {
         ".jpg",
         context.cacheDir
     )
-    return FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.provider",
-        imageFile
-    )
-}
-
-@Composable
-private fun ProfileInfoItem(title: String, value: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = value, style = MaterialTheme.typography.bodyLarge)
-    }
+    return FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
 }
