@@ -91,7 +91,7 @@ fun StandardAvatarScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp)
     ) {
-        Text("Standard Avatar", style = MaterialTheme.typography.headlineMedium)
+        Text("Avatar", style = MaterialTheme.typography.headlineMedium)
         Text(
             text = "Passe deinen Avatar an",
             style = MaterialTheme.typography.bodyMedium,
