@@ -73,8 +73,7 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onSavedOutfitsClick: () -> Unit,
     onCreateAvatarClick: () -> Unit,
-    onCustomizeAvatarClick: (avatarType: String) -> Unit,
-    onSwitchToCustomAvatarClick: () -> Unit,
+    onCustomizeAvatarClick: () -> Unit,
     onPremiumClick: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -212,8 +211,7 @@ fun ProfileScreen(
         AvatarCard(
             avatar = avatar,
             onCreateAvatarClick = onCreateAvatarClick,
-            onCustomizeAvatarClick = onCustomizeAvatarClick,
-            onSwitchToCustomAvatarClick = onSwitchToCustomAvatarClick
+            onCustomizeAvatarClick = onCustomizeAvatarClick
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -423,8 +421,7 @@ private fun ProfileActionButton(
 private fun AvatarCard(
     avatar: Avatar?,
     onCreateAvatarClick: () -> Unit,
-    onCustomizeAvatarClick: (avatarType: String) -> Unit,
-    onSwitchToCustomAvatarClick: () -> Unit
+    onCustomizeAvatarClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -468,7 +465,7 @@ private fun AvatarCard(
                 }
             }
 
-            if (avatar?.type == "default") {
+            if (avatar != null) {
                 AvatarSettingsSummary(avatar = avatar)
             }
 
@@ -482,7 +479,7 @@ private fun AvatarCard(
                 }
             } else {
                 OutlinedButton(
-                    onClick = { onCustomizeAvatarClick(avatar.type) },
+                    onClick = onCustomizeAvatarClick,
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large
                 ) {
@@ -494,15 +491,6 @@ private fun AvatarCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Avatar anpassen")
                 }
-                if (avatar.type == "default") {
-                    OutlinedButton(
-                        onClick = onSwitchToCustomAvatarClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large
-                    ) {
-                        Text("Zu Custom Avatar wechseln")
-                    }
-                }
             }
         }
     }
@@ -511,16 +499,7 @@ private fun AvatarCard(
 @Composable
 private fun AvatarPreview(avatar: Avatar?) {
     when {
-        avatar?.type == "custom" && !avatar.frontImageUrl.isNullOrBlank() -> {
-            AsyncImage(
-                model = avatar.frontImageUrl,
-                contentDescription = "Custom Avatar",
-                modifier = Modifier
-                    .size(84.dp)
-                    .clip(CircleShape)
-            )
-        }
-        avatar?.type == "default" && !avatar.imageUrl.isNullOrBlank() -> {
+        avatar != null && !avatar.imageUrl.isNullOrBlank() -> {
             AsyncImage(
                 model = avatar.imageUrl,
                 contentDescription = "Standard Avatar",
@@ -529,7 +508,7 @@ private fun AvatarPreview(avatar: Avatar?) {
                     .clip(CircleShape)
             )
         }
-        avatar?.type == "default" -> {
+        avatar != null -> {
             DefaultAvatarPreview(avatar = avatar, size = 84)
         }
         else -> {

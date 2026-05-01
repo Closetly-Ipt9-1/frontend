@@ -29,8 +29,6 @@ import com.closetly.myapp.profile.ui.ProfileScreen
 import com.closetly.myapp.profile.ui.EditProfileScreen
 import com.closetly.myapp.auth.func.AuthManager
 import com.closetly.myapp.profile.ui.SavedOutfitsScreen
-import com.closetly.myapp.profile.ui.CreateAvatarScreen
-import com.closetly.myapp.profile.ui.CustomAvatarScreen
 import com.closetly.myapp.profile.ui.StandardAvatarScreen
 import com.closetly.myapp.profile.viewmodel.ProfileViewModel
 import com.closetly.myapp.premium.ui.PremiumScreen
@@ -175,17 +173,12 @@ fun ClosetlyApp() {
                         }
                     },
                     onCreateAvatarClick = {
-                        navController.navigate(Routes.CREATE_AVATAR) {
+                        navController.navigate(Routes.STANDARD_AVATAR) {
                             launchSingleTop = true
                         }
                     },
-                    onCustomizeAvatarClick = { _ ->
-                        navController.navigate(Routes.CREATE_AVATAR) {
-                            launchSingleTop = true
-                        }
-                    },
-                    onSwitchToCustomAvatarClick = {
-                        navController.navigate(Routes.CUSTOM_AVATAR) {
+                    onCustomizeAvatarClick = {
+                        navController.navigate(Routes.STANDARD_AVATAR) {
                             launchSingleTop = true
                         }
                     },
@@ -206,16 +199,8 @@ fun ClosetlyApp() {
 
             composable(Routes.SAVED_OUTFITS) { SavedOutfitsScreen() }
 
-            composable(Routes.CREATE_AVATAR) {
-                CreateAvatarScreen(navController)
-            }
-
             composable(Routes.STANDARD_AVATAR) {
                 StandardAvatarScreen(navController)
-            }
-
-            composable(Routes.CUSTOM_AVATAR) {
-                CustomAvatarScreen(navController)
             }
         }
     }
