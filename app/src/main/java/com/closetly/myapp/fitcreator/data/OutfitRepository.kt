@@ -33,7 +33,8 @@ class OutfitRepository {
                 "imageUrl" to item.imageUrl,
                 "color" to item.color,
                 "brand" to item.brand,
-                "size" to item.size
+                "size" to item.size,
+                "purchaseLink" to item.purchaseLink
             )
         }
 
@@ -110,7 +111,8 @@ class OutfitRepository {
                                     imageUrl = itemMap["imageUrl"] as? String ?: "",
                                     color = itemMap["color"] as? String,
                                     brand = itemMap["brand"] as? String,
-                                    size = itemMap["size"] as? String
+                                    size = itemMap["size"] as? String,
+                                    purchaseLink = itemMap["purchaseLink"] as? String
                                 )
                             } else {
                                 null

@@ -11,4 +11,7 @@ object Routes {
     const val SAVED_OUTFITS = "saved_outfits"
     const val STANDARD_AVATAR = "standard_avatar"
     const val MANAGE_SUBSCRIPTION = "manage_subscription"
+    const val OUTFIT_DETAIL = "outfit_detail/{outfitId}"
+
+    fun outfitDetail(outfitId: String) = "outfit_detail/$outfitId"
 }

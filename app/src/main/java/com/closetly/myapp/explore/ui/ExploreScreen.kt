@@ -88,7 +88,7 @@ data class OutfitComment(
 )
 
 @Composable
-fun ExploreScreen() {
+fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
     val firestore = remember { FirebaseFirestore.getInstance() }
     val currentUserId = AuthManager.getCurrentUserId()
     val currentUsername = AuthManager.getCurrentUser()?.displayName ?: "Anonymous"
@@ -272,6 +272,7 @@ fun ExploreScreen() {
                         currentUserId = currentUserId,
                         currentUsername = currentUsername,
                         firestore = firestore,
+                        onCardClick = { onOutfitClick(outfit.id) },
                         onLikeClick = {
                             if (currentUserId != null) {
                                 toggleLike(
@@ -308,6 +309,7 @@ fun ExploreOutfitCard(
     currentUserId: String?,
     currentUsername: String,
     firestore: FirebaseFirestore,
+    onCardClick: () -> Unit = {},
     onLikeClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
@@ -413,7 +415,8 @@ fun ExploreOutfitCard(
                                 MaterialTheme.colorScheme.background
                             )
                         )
-                    ),
+                    )
+                    .clickable { onCardClick() },
                 contentAlignment = Alignment.Center
             ) {
                 if (outfit.imageUrl.isNotBlank()) {
