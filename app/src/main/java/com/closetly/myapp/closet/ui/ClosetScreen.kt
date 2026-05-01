@@ -5,9 +5,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -97,7 +102,7 @@ fun ClosetScreen() {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "My Closet",
+                        text = "Schrank",
                         style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
@@ -107,7 +112,7 @@ fun ClosetScreen() {
                         shape = MaterialTheme.shapes.large
                     ) {
                         Text(
-                            text = "${filteredClothes.size} saved items",
+                            text = "${filteredClothes.size} Teile gefunden",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
@@ -133,12 +138,12 @@ fun ClosetScreen() {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Add clothing",
+                            text = "Kleidung hinzufügen",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Upload a photo and tag it for faster outfit building.",
+                            text = "Foto hochladen und direkt Kategorie, Farbe, Marke und Größe setzen.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -149,7 +154,7 @@ fun ClosetScreen() {
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Add")
+                        Text("Hinzufügen")
                     }
                 }
             }
@@ -177,28 +182,28 @@ fun ClosetScreen() {
                         )
 
                         DropdownSelector(
-                            label = "Category",
+                            label = "Kategorie",
                             options = categoryOptions,
                             selectedValue = category,
                             onValueSelected = { category = it }
                         )
 
                         DropdownSelector(
-                            label = "Color",
+                            label = "Farbe",
                             options = colorOptions,
                             selectedValue = color,
                             onValueSelected = { color = it }
                         )
 
                         DropdownSelector(
-                            label = "Brand",
+                            label = "Marke",
                             options = brandOptions,
                             selectedValue = brand,
                             onValueSelected = { brand = it }
                         )
 
                         DropdownSelector(
-                            label = "Size",
+                            label = "Größe",
                             options = sizeOptions,
                             selectedValue = size,
                             onValueSelected = { size = it }
@@ -236,7 +241,7 @@ fun ClosetScreen() {
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Save")
+                                Text("Speichern")
                             }
                             OutlinedButton(
                                 onClick = {
@@ -250,7 +255,7 @@ fun ClosetScreen() {
                             ) {
                                 Icon(Icons.Default.Close, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Cancel")
+                                Text("Abbrechen")
                             }
                         }
                     }
@@ -259,34 +264,62 @@ fun ClosetScreen() {
         }
 
         item(key = "filters") {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "Filters",
+                        "Kategorien & Filter",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
 
-                    FilterDropdown(
-                        label = "Category",
-                        options = categoryOptions,
-                        selectedValue = selectedCategory,
-                        onValueSelected = { viewModel.setSelectedCategory(it) }
-                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            ClosetFilterChip(
+                                label = "Alle",
+                                isSelected = selectedCategory == null,
+                                onClick = { viewModel.setSelectedCategory(null) }
+                            )
+                        }
+                        items(categoryOptions) { option ->
+                            ClosetFilterChip(
+                                label = option,
+                                isSelected = selectedCategory == option,
+                                onClick = {
+                                    viewModel.setSelectedCategory(
+                                        if (selectedCategory == option) null else option
+                                    )
+                                }
+                            )
+                        }
+                    }
 
-                    FilterDropdown(
-                        label = "Color",
-                        options = colorOptions,
-                        selectedValue = selectedColor,
-                        onValueSelected = { viewModel.setSelectedColor(it) }
-                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            ClosetFilterChip(
+                                label = "Alle Farben",
+                                isSelected = selectedColor == null,
+                                onClick = { viewModel.setSelectedColor(null) }
+                            )
+                        }
+                        items(colorOptions.take(7)) { option ->
+                            ClosetColorChip(
+                                label = option,
+                                isSelected = selectedColor == option,
+                                onClick = {
+                                    viewModel.setSelectedColor(
+                                        if (selectedColor == option) null else option
+                                    )
+                                }
+                            )
+                        }
+                    }
 
                     FilterDropdown(
                         label = "Brand",
@@ -304,9 +337,10 @@ fun ClosetScreen() {
 
                     OutlinedButton(
                         onClick = { viewModel.clearFilters() },
-                        shape = MaterialTheme.shapes.large
+                        shape = MaterialTheme.shapes.large,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Clear filters")
+                        Text("Filter zurücksetzen")
                     }
                 }
             }
@@ -410,27 +444,202 @@ fun ClosetScreen() {
             }
         }
 
-        items(
-            items = filteredClothes,
-            key = { it.id }
-        ) { item ->
-            ClothingItemCard(
-                item = item,
-                onEdit = {
-                    editingItemId = item.id
-                    editCategory = item.category
-                    editColor = item.color ?: ""
-                    editBrand = item.brand ?: ""
-                    editSize = item.size ?: ""
-                },
-                onDelete = {
-                    viewModel.deleteClothingItem(item.id)
+        item(key = "clothes_grid") {
+            if (filteredClothes.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Text(
+                        text = "Noch keine Kleidung gefunden. Füge oben dein erstes Teil hinzu.",
+                        modifier = Modifier.padding(18.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-            )
+            } else {
+                val rows = (filteredClothes.size + 1) / 2
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height((rows * 254).dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    userScrollEnabled = false
+                ) {
+                    items(
+                        items = filteredClothes,
+                        key = { it.id }
+                    ) { item ->
+                        ClosetGridItemCard(
+                            item = item,
+                            onEdit = {
+                                editingItemId = item.id
+                                editCategory = item.category
+                                editColor = item.color ?: ""
+                                editBrand = item.brand ?: ""
+                                editSize = item.size ?: ""
+                            },
+                            onDelete = {
+                                viewModel.deleteClothingItem(item.id)
+                            }
+                        )
+                    }
+                }
+            }
         }
 
         item(key = "bottom_space") {
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun ClosetFilterChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)
+        )
+    }
+}
+
+@Composable
+private fun ClosetColorChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(13.dp)
+                    .background(getColorFromName(label), CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+            )
+            Text(text = label, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
+private fun ClosetGridItemCard(
+    item: ClothingItemUi,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.category,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(142.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop
+                )
+
+                IconButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(32.dp)
+                        .background(Color.Black.copy(alpha = 0.38f), CircleShape)
+                ) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = "Menu",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Bearbeiten") },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        onClick = {
+                            onEdit()
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Löschen") },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        onClick = {
+                            onDelete()
+                            expanded = false
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = item.category,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                item.color?.takeIf { it.isNotBlank() }?.let {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(getColorFromName(it), CircleShape)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                    )
+                }
+                Text(
+                    text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "Keine Details" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
@@ -543,7 +752,7 @@ fun DropdownSelector(
     onValueSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorSelector = label == "Color"
+    val isColorSelector = label == "Color" || label == "Farbe"
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -628,7 +837,7 @@ fun FilterDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorFilter = label == "Color"
+    val isColorFilter = label == "Color" || label == "Farbe"
 
     ExposedDropdownMenuBox(
         expanded = expanded,
