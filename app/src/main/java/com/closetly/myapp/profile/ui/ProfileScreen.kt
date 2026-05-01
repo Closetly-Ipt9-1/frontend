@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +35,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,18 +48,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.UserProfileChangeRequest
-import com.google.firebase.storage.FirebaseStorage
 import com.closetly.myapp.premium.data.PremiumAccessRepository
 import com.closetly.myapp.premium.model.SubscriptionStatus
 import com.closetly.myapp.profile.model.Avatar
 import com.closetly.myapp.profile.viewmodel.ProfileViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.storage.FirebaseStorage
 import java.io.File
 import java.util.UUID
 
@@ -84,7 +90,6 @@ fun ProfileScreen(
         mutableStateOf(user?.photoUrl?.toString())
     }
     var isUploading by remember { mutableStateOf(false) }
-
     var showSourceDialog by remember { mutableStateOf(false) }
     var showPreviewDialog by remember { mutableStateOf(false) }
     var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -100,7 +105,8 @@ fun ProfileScreen(
             .addOnSuccessListener {
                 imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
                     val profileUpdates = UserProfileChangeRequest.Builder()
-                        .setPhotoUri(downloadUri).build()
+                        .setPhotoUri(downloadUri)
+                        .build()
                     currentUser.updateProfile(profileUpdates)
                         .addOnSuccessListener {
                             photoUrl = downloadUri.toString()
@@ -133,7 +139,6 @@ fun ProfileScreen(
 
     val displayName = user?.displayName?.takeIf { it.isNotBlank() } ?: "Kein Anzeigename"
     val email = user?.email ?: "Keine E-Mail"
-    val uid = user?.uid ?: "Keine UID"
 
     LaunchedEffect(Unit) {
         premiumAccessRepository.getSubscriptionStatus(
@@ -145,214 +150,73 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Profilbild (unabhängig vom Avatar)
-        if (!photoUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = photoUrl,
-                contentDescription = "Profilbild",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Standard-Profilbild",
-                    modifier = Modifier.size(56.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (isUploading) {
-            CircularProgressIndicator()
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        OutlinedButton(
-            onClick = { showSourceDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Profilbild ändern")
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         Text(
             text = "Profil",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        ProfileHeroCard(
+            photoUrl = photoUrl,
+            displayName = displayName,
+            email = email,
+            isUploading = isUploading,
+            onChangePhoto = { showSourceDialog = true }
+        )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ProfileInfoItem(title = "Anzeigename", value = displayName)
-                HorizontalDivider()
-                ProfileInfoItem(title = "E-Mail", value = email)
-                HorizontalDivider()
-                ProfileInfoItem(title = "Benutzer-ID", value = uid)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        AccountCard(displayName = displayName, email = email)
 
         Button(
             onClick = onPremiumClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = MaterialTheme.shapes.large
         ) {
-            Icon(imageVector = Icons.Default.Edit, contentDescription = "Manage premium")
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(if (subscriptionStatus.isPremium) "Manage subscription" else "Buy Premium")
-
+            Text(if (subscriptionStatus.isPremium) "Abo verwalten" else "Premium freischalten")
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = onEditClick,
-            modifier = Modifier.fillMaxWidth()
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            Icon(imageVector = Icons.Default.Edit, contentDescription = "Profil bearbeiten")
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Editieren")
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ProfileActionButton(
+                    text = "Profil bearbeiten",
+                    icon = Icons.Default.Edit,
+                    onClick = onEditClick
+                )
+                ProfileActionButton(
+                    text = "Gespeicherte Outfits",
+                    icon = null,
+                    onClick = onSavedOutfitsClick
+                )
+                ProfileActionButton(
+                    text = "Ausloggen",
+                    icon = Icons.Default.ExitToApp,
+                    onClick = onLogoutClick
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = onSavedOutfitsClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Gespeicherte Outfits")
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = onLogoutClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Ausloggen")
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Ausloggen")
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        HorizontalDivider()
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Avatar-Bereich
-        Text(
-            text = "Mein Avatar",
-            style = MaterialTheme.typography.headlineMedium
+        AvatarCard(
+            avatar = avatar,
+            onCreateAvatarClick = onCreateAvatarClick,
+            onCustomizeAvatarClick = onCustomizeAvatarClick,
+            onSwitchToCustomAvatarClick = onSwitchToCustomAvatarClick
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        when {
-            avatar?.type == "custom" && !avatar?.frontImageUrl.isNullOrBlank() -> {
-                AsyncImage(
-                    model = avatar!!.frontImageUrl,
-                    contentDescription = "Custom Avatar",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
-            }
-            avatar?.type == "default" && !avatar!!.imageUrl.isNullOrBlank() -> {
-                AsyncImage(
-                    model = avatar!!.imageUrl,
-                    contentDescription = "Standard Avatar",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
-            }
-            avatar?.type == "default" -> {
-                DefaultAvatarPreview(avatar = avatar!!)
-            }
-            else -> {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Kein Avatar",
-                        modifier = Modifier.size(56.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        if (avatar?.type == "default") {
-            Spacer(modifier = Modifier.height(12.dp))
-            AvatarSettingsSummary(avatar = avatar!!)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (avatar == null) {
-            Button(
-                onClick = onCreateAvatarClick,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Avatar erstellen")
-            }
-        } else {
-            OutlinedButton(
-                onClick = { onCustomizeAvatarClick(avatar!!.type) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Avatar anpassen",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Avatar anpassen")
-            }
-            if (avatar!!.type == "default") {
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = onSwitchToCustomAvatarClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Zu Custom Avatar wechseln")
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
 
     if (showSourceDialog) {
@@ -415,7 +279,280 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun DefaultAvatarPreview(avatar: Avatar) {
+private fun ProfileHeroCard(
+    photoUrl: String?,
+    displayName: String,
+    email: String,
+    isUploading: Boolean,
+    onChangePhoto: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
+                )
+                .padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (!photoUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = photoUrl,
+                    contentDescription = "Profilbild",
+                    modifier = Modifier
+                        .size(112.dp)
+                        .clip(CircleShape)
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(112.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Standard-Profilbild",
+                        modifier = Modifier.size(54.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (isUploading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            }
+
+            OutlinedButton(
+                onClick = onChangePhoto,
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text("Profilbild ändern")
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountCard(displayName: String, email: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Account",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            ProfileInfoItem(title = "Anzeigename", value = displayName)
+            HorizontalDivider()
+            ProfileInfoItem(title = "E-Mail", value = email)
+        }
+    }
+}
+
+@Composable
+private fun ProfileActionButton(
+    text: String,
+    icon: ImageVector?,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .clickable(onClick = onClick),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AvatarCard(
+    avatar: Avatar?,
+    onCreateAvatarClick: () -> Unit,
+    onCustomizeAvatarClick: (avatarType: String) -> Unit,
+    onSwitchToCustomAvatarClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(
+                text = "Avatar",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                AvatarPreview(avatar = avatar)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = if (avatar == null) "Noch kein Avatar" else "Dein Avatar",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (avatar == null) {
+                            "Erstelle einen Look für dein Profil."
+                        } else {
+                            "Passe deinen Avatar jederzeit an."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (avatar?.type == "default") {
+                AvatarSettingsSummary(avatar = avatar)
+            }
+
+            if (avatar == null) {
+                Button(
+                    onClick = onCreateAvatarClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text("Avatar erstellen")
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { onCustomizeAvatarClick(avatar.type) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Avatar anpassen",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Avatar anpassen")
+                }
+                if (avatar.type == "default") {
+                    OutlinedButton(
+                        onClick = onSwitchToCustomAvatarClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Text("Zu Custom Avatar wechseln")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AvatarPreview(avatar: Avatar?) {
+    when {
+        avatar?.type == "custom" && !avatar.frontImageUrl.isNullOrBlank() -> {
+            AsyncImage(
+                model = avatar.frontImageUrl,
+                contentDescription = "Custom Avatar",
+                modifier = Modifier
+                    .size(84.dp)
+                    .clip(CircleShape)
+            )
+        }
+        avatar?.type == "default" && !avatar.imageUrl.isNullOrBlank() -> {
+            AsyncImage(
+                model = avatar.imageUrl,
+                contentDescription = "Standard Avatar",
+                modifier = Modifier
+                    .size(84.dp)
+                    .clip(CircleShape)
+            )
+        }
+        avatar?.type == "default" -> {
+            DefaultAvatarPreview(avatar = avatar, size = 84)
+        }
+        else -> {
+            Box(
+                modifier = Modifier
+                    .size(84.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Kein Avatar",
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DefaultAvatarPreview(avatar: Avatar, size: Int = 120) {
     val skinColor = when (avatar.skinColor) {
         "hell" -> Color(0xFFFFDBAC)
         "mittel" -> Color(0xFFC68642)
@@ -434,7 +571,7 @@ private fun DefaultAvatarPreview(avatar: Avatar) {
 
     Box(
         modifier = Modifier
-            .size(120.dp)
+            .size(size.dp)
             .clip(CircleShape)
             .background(skinColor),
         contentAlignment = Alignment.Center
@@ -442,14 +579,14 @@ private fun DefaultAvatarPreview(avatar: Avatar) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(32.dp)
+                .height((size / 4).dp)
                 .background(hairColor)
                 .align(Alignment.TopCenter)
         )
         Icon(
             imageVector = Icons.Default.Person,
             contentDescription = "Avatar",
-            modifier = Modifier.size(60.dp),
+            modifier = Modifier.size((size / 2).dp),
             tint = Color.White.copy(alpha = 0.9f)
         )
     }
@@ -459,18 +596,18 @@ private fun DefaultAvatarPreview(avatar: Avatar) {
 private fun AvatarSettingsSummary(avatar: Avatar) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             if (!avatar.gender.isNullOrBlank()) {
                 Text(
-                    text = avatar.gender!!.replaceFirstChar { it.uppercase() },
+                    text = avatar.gender.replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.labelMedium
                 )
             }
