@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -492,16 +494,26 @@ fun ExploreOutfitCard(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     } else {
-                        comments.forEach { comment ->
-                            CommentItem(
-                                comment = comment,
-                                currentUserId = currentUserId,
-                                onLikeClick = {
-                                    if (currentUserId != null) {
-                                        toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
+                        val commentItemHeight = 72.dp
+                        val maxVisible = 5
+                        val listHeight = commentItemHeight * minOf(comments.size, maxVisible)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(listHeight)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            comments.forEach { comment ->
+                                CommentItem(
+                                    comment = comment,
+                                    currentUserId = currentUserId,
+                                    onLikeClick = {
+                                        if (currentUserId != null) {
+                                            toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
 
