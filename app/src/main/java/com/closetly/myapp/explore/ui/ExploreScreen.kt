@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
@@ -141,6 +142,7 @@ fun ExploreScreen() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
                     .statusBarsPadding(),
                 contentAlignment = Alignment.Center
             ) {
@@ -152,13 +154,20 @@ fun ExploreScreen() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = errorText ?: "Something went wrong",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Text(
+                        text = errorText ?: "Etwas ist schiefgelaufen",
+                        modifier = Modifier.padding(18.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
 
@@ -166,13 +175,20 @@ fun ExploreScreen() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "No public outfits yet",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Text(
+                        text = "Noch keine öffentlichen Outfits",
+                        modifier = Modifier.padding(18.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
 
@@ -199,16 +215,28 @@ fun ExploreScreen() {
                                     )
                                 )
                             )
-                            .padding(22.dp)
+                            .padding(20.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                contentColor = MaterialTheme.colorScheme.primary,
+                                shape = MaterialTheme.shapes.large
+                            ) {
+                                Text(
+                                    text = "${outfits.size} Looks",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                                )
+                            }
                             Text(
                                 text = "Explore",
                                 style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Discover public outfits",
+                                text = "Entdecke öffentliche Outfits und speichere deine Favoriten.",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -263,7 +291,6 @@ fun ExploreOutfitCard(
     val isLiked = currentUserId != null && outfit.likedBy.contains(currentUserId)
     val isSaved = currentUserId != null && outfit.savedBy.contains(currentUserId)
 
-    var commentsExpanded by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<OutfitComment>>(emptyList()) }
     var commentText by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -294,7 +321,7 @@ fun ExploreOutfitCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -302,34 +329,48 @@ fun ExploreOutfitCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 12.dp),
+                    .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    modifier = Modifier.size(44.dp),
+                    modifier = Modifier.size(42.dp),
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "User",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
 
                 Column(
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier
+                        .padding(start = 12.dp)
+                        .weight(1f)
                 ) {
                     Text(
                         text = outfit.username,
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = if (outfit.isPublic) "Public outfit" else "Private outfit",
+                        text = if (outfit.isPublic) "Öffentlicher Look" else "Privater Look",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ) {
+                    Text(
+                        text = "Community",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     )
                 }
             }
@@ -337,10 +378,17 @@ fun ExploreOutfitCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
-                    .padding(horizontal = 16.dp)
+                    .height(330.dp)
+                    .padding(horizontal = 14.dp)
                     .clip(MaterialTheme.shapes.large)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(
+                        Brush.radialGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                MaterialTheme.colorScheme.background
+                            )
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 if (outfit.imageUrl.isNotBlank()) {
@@ -348,7 +396,7 @@ fun ExploreOutfitCard(
                         model = outfit.imageUrl,
                         contentDescription = outfit.caption.ifBlank { "Outfit" },
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        contentScale = ContentScale.Crop
                     )
                 } else {
                     Column(
@@ -362,7 +410,7 @@ fun ExploreOutfitCard(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Outfit preview",
+                            text = "Look Vorschau",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -376,8 +424,13 @@ fun ExploreOutfitCard(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = outfit.caption,
-                    style = MaterialTheme.typography.bodyLarge
+                    text = outfit.caption.ifBlank { "Ohne Beschreibung" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (outfit.caption.isBlank()) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -387,58 +440,80 @@ fun ExploreOutfitCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onLikeClick
+                    Surface(
+                        shape = MaterialTheme.shapes.large,
+                        color = if (isLiked) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        }
                     ) {
-                        Icon(
-                            imageVector = if (isLiked) {
-                                Icons.Default.Favorite
-                            } else {
-                                Icons.Default.FavoriteBorder
-                            },
-                            contentDescription = "Like",
-                            modifier = Modifier.size(28.dp),
-                            tint = if (isLiked) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 10.dp)
+                        ) {
+                            IconButton(onClick = onLikeClick) {
+                                Icon(
+                                    imageVector = if (isLiked) {
+                                        Icons.Default.Favorite
+                                    } else {
+                                        Icons.Default.FavoriteBorder
+                                    },
+                                    contentDescription = "Like",
+                                    modifier = Modifier.size(24.dp),
+                                    tint = if (isLiked) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
                             }
-                        )
+                            Text(
+                                text = "${outfit.likeCount}",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
-
-                    Text(
-                        text = "${outfit.likeCount} likes",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    IconButton(
-                        onClick = onSaveClick
+                    Surface(
+                        shape = MaterialTheme.shapes.large,
+                        color = if (isSaved) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        }
                     ) {
-                        Icon(
-                            imageVector = if (isSaved) {
-                                Icons.Default.Check
-                            } else {
-                                Icons.Default.CheckCircle
-                            },
-                            contentDescription = "Save",
-                            modifier = Modifier.size(28.dp),
-                            tint = if (isSaved) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 10.dp)
+                        ) {
+                            IconButton(onClick = onSaveClick) {
+                                Icon(
+                                    imageVector = if (isSaved) {
+                                        Icons.Default.Check
+                                    } else {
+                                        Icons.Default.CheckCircle
+                                    },
+                                    contentDescription = "Save",
+                                    modifier = Modifier.size(24.dp),
+                                    tint = if (isSaved) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
                             }
-                        )
+                            Text(
+                                text = "${outfit.saveCount}",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
-
-                    Text(
-                        text = "${outfit.saveCount} saves",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
                 }
             }
 
@@ -447,94 +522,85 @@ fun ExploreOutfitCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 4.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = if (comments.isEmpty()) "Kommentare" else "${comments.size} Kommentar${if (comments.size != 1) "e" else ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                IconButton(onClick = { commentsExpanded = !commentsExpanded }) {
-                    Icon(
-                        imageVector = if (commentsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (commentsExpanded) "Ausblenden" else "Anzeigen"
-                    )
-                }
             }
 
-            if (commentsExpanded) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-                ) {
-                    if (comments.isEmpty()) {
-                        Text(
-                            text = "Noch keine Kommentare. Sei der Erste!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    } else {
-                        comments.forEach { comment ->
-                            CommentItem(
-                                comment = comment,
-                                currentUserId = currentUserId,
-                                onLikeClick = {
-                                    if (currentUserId != null) {
-                                        toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
-                                    }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            ) {
+                if (comments.isEmpty()) {
+                    Text(
+                        text = "Noch keine Kommentare. Sei der Erste!",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                } else {
+                    comments.forEach { comment ->
+                        CommentItem(
+                            comment = comment,
+                            currentUserId = currentUserId,
+                            onLikeClick = {
+                                if (currentUserId != null) {
+                                    toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
+                }
 
-                    if (currentUserId != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = commentText,
-                                onValueChange = { commentText = it },
-                                placeholder = { Text("Kommentar schreiben...") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                                keyboardActions = KeyboardActions(
-                                    onSend = {
-                                        if (commentText.isNotBlank()) {
-                                            addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
-                                            commentText = ""
-                                            keyboardController?.hide()
-                                        }
-                                    }
-                                ),
-                                maxLines = 3,
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            IconButton(
-                                onClick = {
+                if (currentUserId != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = commentText,
+                            onValueChange = { commentText = it },
+                            placeholder = { Text("Kommentar schreiben") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(
+                                onSend = {
                                     if (commentText.isNotBlank()) {
                                         addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
                                         commentText = ""
                                         keyboardController?.hide()
                                     }
                                 }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Send,
-                                    contentDescription = "Senden",
-                                    tint = if (commentText.isNotBlank()) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    }
-                                )
+                            ),
+                            maxLines = 3,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        IconButton(
+                            onClick = {
+                                if (commentText.isNotBlank()) {
+                                    addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
+                                    commentText = ""
+                                    keyboardController?.hide()
+                                }
                             }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Send,
+                                contentDescription = "Senden",
+                                tint = if (commentText.isNotBlank()) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
                         }
                     }
                 }
@@ -612,7 +678,7 @@ private fun seedPlaceholderOutfitsIfNeeded(firestore: FirebaseFirestore) {
                 mapOf(
                     "ownerId" to "placeholder-user-1",
                     "username" to "Closetly",
-                    "caption" to "Minimal black and white placeholder outfit",
+                    "caption" to "Minimaler Schwarz-Weiß-Look",
                     "imageUrl" to "",
                     "isPublic" to true,
                     "likeCount" to 0,
@@ -629,7 +695,7 @@ private fun seedPlaceholderOutfitsIfNeeded(firestore: FirebaseFirestore) {
                 mapOf(
                     "ownerId" to "placeholder-user-2",
                     "username" to "Closetly",
-                    "caption" to "Streetwear placeholder outfit",
+                    "caption" to "Streetwear Look für den Alltag",
                     "imageUrl" to "",
                     "isPublic" to true,
                     "likeCount" to 0,
