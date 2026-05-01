@@ -53,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -87,6 +88,7 @@ private const val DEBUG_NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696
 private const val RELEASE_NATIVE_AD_UNIT_ID = "ca-app-pub-4262797000632373/3282738680"
 private const val OUTFITS_BEFORE_FIRST_AD = 2
 private const val OUTFITS_BETWEEN_ADS = 4
+private const val PRELOADED_NATIVE_AD_COUNT = 3
 private const val EXPLORE_AD_TAG = "ExploreNativeAd"
 
 data class ExploreOutfit(
@@ -117,16 +119,38 @@ data class OutfitComment(
 @Composable
 fun ExploreScreen() {
     val firestore = remember { FirebaseFirestore.getInstance() }
+    val context = LocalContext.current
     val currentUserId = AuthManager.getCurrentUserId()
     val currentUsername = AuthManager.getCurrentUser()?.displayName ?: "Anonymous"
+    val nativeAdUnitId = if (BuildConfig.DEBUG) DEBUG_NATIVE_AD_UNIT_ID else RELEASE_NATIVE_AD_UNIT_ID
 
     var outfits by remember { mutableStateOf<List<ExploreOutfit>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var filterTagIds by remember { mutableStateOf<List<String>>(emptyList()) }
+    val preloadedNativeAds = remember { mutableStateListOf<NativeAd>() }
 
     LaunchedEffect(Unit) {
         seedPlaceholderOutfitsIfNeeded(firestore)
+    }
+
+    LaunchedEffect(context, nativeAdUnitId) {
+        preloadNativeAds(
+            context = context,
+            adUnitId = nativeAdUnitId,
+            targetCount = PRELOADED_NATIVE_AD_COUNT,
+            currentCount = { preloadedNativeAds.size },
+            onLoaded = { loadedAd ->
+                preloadedNativeAds.add(loadedAd)
+            }
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            preloadedNativeAds.forEach { it.destroy() }
+            preloadedNativeAds.clear()
+        }
     }
 
     DisposableEffect(Unit) {
@@ -320,7 +344,10 @@ fun ExploreScreen() {
                     )
 
                     if (shouldShowAdAfterOutfit(index)) {
+                        val adSlotIndex = adSlotIndexAfterOutfit(index)
                         NativeAdCard(
+                            preloadedAd = preloadedNativeAds.getOrNull(adSlotIndex),
+                            adUnitId = nativeAdUnitId,
                             modifier = Modifier.padding(top = 16.dp)
                         )
                     }
@@ -338,14 +365,50 @@ private fun shouldShowAdAfterOutfit(index: Int): Boolean =
     (index + 1) >= OUTFITS_BEFORE_FIRST_AD &&
         ((index + 1) - OUTFITS_BEFORE_FIRST_AD) % OUTFITS_BETWEEN_ADS == 0
 
+private fun adSlotIndexAfterOutfit(index: Int): Int =
+    ((index + 1) - OUTFITS_BEFORE_FIRST_AD) / OUTFITS_BETWEEN_ADS
+
+private fun preloadNativeAds(
+    context: Context,
+    adUnitId: String,
+    targetCount: Int,
+    currentCount: () -> Int,
+    onLoaded: (NativeAd) -> Unit
+) {
+    val missingAds = targetCount - currentCount()
+    if (missingAds <= 0) return
+
+    repeat(missingAds) {
+        AdLoader.Builder(context, adUnitId)
+            .forNativeAd { loadedAd ->
+                onLoaded(loadedAd)
+                Log.d(EXPLORE_AD_TAG, "Preloaded native ad")
+            }
+            .withAdListener(
+                object : AdListener() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        Log.w(
+                            EXPLORE_AD_TAG,
+                            "Native preload failed: code=${adError.code}, domain=${adError.domain}, message=${adError.message}"
+                        )
+                    }
+                }
+            )
+            .withNativeAdOptions(NativeAdOptions.Builder().build())
+            .build()
+            .loadAd(AdRequest.Builder().build())
+    }
+}
+
 @Composable
 private fun NativeAdCard(
+    preloadedAd: NativeAd? = null,
+    adUnitId: String,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var nativeAd by remember { mutableStateOf<NativeAd?>(null) }
     var adFailed by remember { mutableStateOf(false) }
-    val adUnitId = if (BuildConfig.DEBUG) DEBUG_NATIVE_AD_UNIT_ID else RELEASE_NATIVE_AD_UNIT_ID
     val adLoader = remember(context, adUnitId) {
         AdLoader.Builder(context, adUnitId)
             .forNativeAd { loadedAd ->
@@ -369,18 +432,19 @@ private fun NativeAdCard(
             .build()
     }
 
-    LaunchedEffect(adLoader) {
-        adLoader
-            .loadAd(AdRequest.Builder().build())
+    LaunchedEffect(adLoader, preloadedAd) {
+        if (preloadedAd == null) {
+            adLoader.loadAd(AdRequest.Builder().build())
+        }
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(nativeAd) {
         onDispose {
             nativeAd?.destroy()
         }
     }
 
-    val loadedAd = nativeAd
+    val loadedAd = preloadedAd ?: nativeAd
     if (loadedAd != null && !adFailed) {
         AndroidView(
             modifier = modifier
