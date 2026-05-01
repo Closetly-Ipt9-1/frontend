@@ -302,6 +302,7 @@ fun ExploreScreen() {
 }
 
 @Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 fun ExploreOutfitCard(
     outfit: ExploreOutfit,
     currentUserId: String?,

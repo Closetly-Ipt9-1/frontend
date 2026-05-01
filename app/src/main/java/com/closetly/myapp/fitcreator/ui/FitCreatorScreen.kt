@@ -745,35 +745,6 @@ private fun OutfitCard(
 }
 
 @Composable
-private fun CategoryButton(
-    category: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(40.dp),
-        shape = MaterialTheme.shapes.large,
-        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
-            contentColor = if (isSelected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            }
-        )
-    ) {
-        Text(category)
-    }
-}
-
-@Composable
 private fun SaveOutfitDialog(
     caption: String,
     isPublic: Boolean,
