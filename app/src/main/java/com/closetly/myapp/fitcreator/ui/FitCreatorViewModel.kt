@@ -1,12 +1,16 @@
 package com.closetly.myapp.fitcreator.ui
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.closetly.myapp.closet.model.ClothingItemUi
 import com.closetly.myapp.fitcreator.data.OutfitRepository
 import com.closetly.myapp.fitcreator.model.Outfit
 import com.closetly.myapp.premium.data.PremiumAccessRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 
 class FitCreatorViewModel : ViewModel() {
 
@@ -24,6 +28,24 @@ class FitCreatorViewModel : ViewModel() {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _selectedTagIds = MutableStateFlow<List<String>>(emptyList())
+    val selectedTagIds: StateFlow<List<String>> = _selectedTagIds
+
+    private val _filterTagIds = MutableStateFlow<List<String>>(emptyList())
+    val filterTagIds: StateFlow<List<String>> = _filterTagIds
+
+    val filteredOutfits: StateFlow<List<Outfit>> = combine(
+        _outfits,
+        _filterTagIds
+    ) { outfits, filterTags ->
+        if (filterTags.isEmpty()) outfits
+        else outfits.filter { outfit -> filterTags.all { it in outfit.tags } }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     fun addItem(item: ClothingItemUi) {
         val currentItems = _selectedItems.value
@@ -49,8 +71,8 @@ class FitCreatorViewModel : ViewModel() {
 
     fun validateOutfit(): Boolean {
         val selectedItems = _selectedItems.value
-        
-        val hasBottomWear = selectedItems.any { 
+
+        val hasBottomWear = selectedItems.any {
             it.category in listOf("Hose", "Pants", "Rock", "Skirt", "Shorts")
         }
 
@@ -91,9 +113,11 @@ class FitCreatorViewModel : ViewModel() {
                 clothingItems = _selectedItems.value,
                 isPublic = isPublic,
                 username = username,
+                tags = _selectedTagIds.value,
                 onSuccess = {
                     _isLoading.value = false
                     _selectedItems.value = emptyList()
+                    _selectedTagIds.value = emptyList()
                     onSuccess(it)
                 },
                 onError = {
@@ -130,6 +154,22 @@ class FitCreatorViewModel : ViewModel() {
         }, { _errorMessage.value = it.message })
     }
 
+    fun toggleNewOutfitTag(tagId: String) {
+        val current = _selectedTagIds.value.toMutableList()
+        if (tagId in current) current.remove(tagId) else current.add(tagId)
+        _selectedTagIds.value = current
+    }
+
+    fun toggleFilterTag(tagId: String) {
+        val current = _filterTagIds.value.toMutableList()
+        if (tagId in current) current.remove(tagId) else current.add(tagId)
+        _filterTagIds.value = current
+    }
+
+    fun clearFilterTags() {
+        _filterTagIds.value = emptyList()
+    }
+
     private fun hasConflictingCategory(currentItems: List<ClothingItemUi>, newItem: ClothingItemUi): Boolean {
         val conflicts = mapOf(
             "Shirt" to listOf("Pullover", "Jumper"),
@@ -144,7 +184,7 @@ class FitCreatorViewModel : ViewModel() {
 
     fun clearSelection() {
         _selectedItems.value = emptyList()
+        _selectedTagIds.value = emptyList()
         _errorMessage.value = null
     }
 }
-

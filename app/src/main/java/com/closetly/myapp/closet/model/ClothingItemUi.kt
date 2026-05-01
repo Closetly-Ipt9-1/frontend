@@ -6,5 +6,6 @@ data class ClothingItemUi(
     val imageUrl: String = "",
     val color: String? = null,
     val brand: String? = null,
-    val size: String? = null
+    val size: String? = null,
+    val tags: List<String> = emptyList()
 )

@@ -132,7 +132,8 @@ class ClosetRepository {
                         imageUrl = it.getString("imageUrl") ?: "",
                         color = it.getString("color"),
                         brand = it.getString("brand"),
-                        size = it.getString("size")
+                        size = it.getString("size"),
+                        tags = (it.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                     )
                 }
                 onSuccess(items)
@@ -189,7 +190,8 @@ class ClosetRepository {
                                 imageUrl = doc.getString("imageUrl") ?: "",
                                 color = doc.getString("color"),
                                 brand = doc.getString("brand"),
-                                size = doc.getString("size")
+                                size = doc.getString("size"),
+                                tags = (doc.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                             )
                         )
                     }

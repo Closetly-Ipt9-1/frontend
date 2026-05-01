@@ -62,6 +62,11 @@ import com.closetly.myapp.auth.func.AuthManager
 import com.closetly.myapp.closet.data.ClosetRepository
 import com.closetly.myapp.closet.model.ClothingItemUi
 import com.closetly.myapp.fitcreator.model.Outfit
+import com.closetly.myapp.tags.model.PredefinedTags
+import com.closetly.myapp.tags.ui.TagChip
+import com.closetly.myapp.tags.ui.TagSelector
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.OutlinedButton
 
 @Composable
 fun FitCreatorScreen() {
@@ -133,6 +138,7 @@ private fun CreateOutfitTab(
     val selectedItems by viewModel.selectedItems.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val selectedTagIds by viewModel.selectedTagIds.collectAsState()
 
     var clothingItems by remember { mutableStateOf<List<ClothingItemUi>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -159,8 +165,10 @@ private fun CreateOutfitTab(
             caption = caption,
             isPublic = isPublic,
             isLoading = isLoading,
+            selectedTagIds = selectedTagIds,
             onCaptionChange = { caption = it },
             onPublicChange = { isPublic = it },
+            onTagToggle = { viewModel.toggleNewOutfitTag(it) },
             onSave = {
                 val username = AuthManager.getCurrentUser()?.displayName ?: "Unknown"
                 viewModel.saveOutfit(
@@ -455,8 +463,9 @@ private fun EmptyClosetHint() {
 
 @Composable
 private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
-    val outfits by viewModel.outfits.collectAsState()
+    val outfits by viewModel.filteredOutfits.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val filterTagIds by viewModel.filterTagIds.collectAsState()
 
     DisposableEffect(Unit) {
         viewModel.loadMyOutfits()
@@ -479,10 +488,28 @@ private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        item {
+            TagSelector(
+                selectedTagIds = filterTagIds,
+                onTagToggle = { viewModel.toggleFilterTag(it) }
+            )
+        }
+
+        if (filterTagIds.isNotEmpty()) {
+            item {
+                OutlinedButton(onClick = { viewModel.clearFilterTags() }) {
+                    Text("Filter zurücksetzen")
+                }
+            }
+        }
+
         if (outfits.isEmpty()) {
             item {
                 Text(
-                    text = "You haven't created any outfits yet. Start by creating your first outfit!",
+                    text = if (filterTagIds.isNotEmpty())
+                        "Keine Outfits für die ausgewählten Tags."
+                    else
+                        "You haven't created any outfits yet. Start by creating your first outfit!",
                     modifier = Modifier.padding(24.dp),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -665,6 +692,17 @@ private fun OutfitCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            if (outfit.tags.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(outfit.tags) { tagId ->
+                        val tag = PredefinedTags.findById(tagId)
+                        if (tag != null) {
+                            TagChip(tag = tag, selected = false, onClick = {})
+                        }
+                    }
+                }
+            }
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier
@@ -740,8 +778,10 @@ private fun SaveOutfitDialog(
     caption: String,
     isPublic: Boolean,
     isLoading: Boolean,
+    selectedTagIds: List<String>,
     onCaptionChange: (String) -> Unit,
     onPublicChange: (Boolean) -> Unit,
+    onTagToggle: (String) -> Unit,
     onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -792,6 +832,11 @@ private fun SaveOutfitDialog(
                             onCheckedChange = onPublicChange
                         )
                     }
+
+                    TagSelector(
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = onTagToggle
+                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

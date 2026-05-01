@@ -14,6 +14,7 @@ data class Outfit(
     val likedBy: List<String> = emptyList(),
     val saveCount: Int = 0,
     val savedBy: List<String> = emptyList(),
-    val createdAt: Long = 0
+    val createdAt: Long = 0,
+    val tags: List<String> = emptyList()
 )
 

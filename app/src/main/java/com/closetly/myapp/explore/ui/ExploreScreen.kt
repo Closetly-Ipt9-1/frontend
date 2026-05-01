@@ -1,6 +1,7 @@
 package com.closetly.myapp.explore.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +58,9 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
+import com.closetly.myapp.tags.model.PredefinedTags
+import com.closetly.myapp.tags.ui.TagChip
+import androidx.compose.foundation.lazy.LazyRow
 
 data class ExploreOutfit(
     val id: String,
@@ -69,7 +73,8 @@ data class ExploreOutfit(
     val likedBy: List<String>,
     val saveCount: Int,
     val savedBy: List<String>,
-    val createdAt: Long
+    val createdAt: Long,
+    val tags: List<String> = emptyList()
 )
 
 data class OutfitComment(
@@ -91,6 +96,7 @@ fun ExploreScreen() {
     var outfits by remember { mutableStateOf<List<ExploreOutfit>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
+    var filterTagIds by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         seedPlaceholderOutfitsIfNeeded(firestore)
@@ -121,7 +127,8 @@ fun ExploreScreen() {
                             likedBy = (document.get("likedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
                             saveCount = document.getLong("saveCount")?.toInt() ?: 0,
                             savedBy = (document.get("savedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
-                            createdAt = document.getLong("createdAt") ?: 0L
+                            createdAt = document.getLong("createdAt") ?: 0L,
+                            tags = (document.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                         )
                     }
                     ?.sortedByDescending { it.createdAt }
@@ -193,6 +200,9 @@ fun ExploreScreen() {
         }
 
         else -> {
+            val displayedOutfits = if (filterTagIds.isEmpty()) outfits
+            else outfits.filter { outfit -> filterTagIds.all { it in outfit.tags } }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -217,34 +227,46 @@ fun ExploreScreen() {
                             )
                             .padding(20.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                                contentColor = MaterialTheme.colorScheme.primary,
-                                shape = MaterialTheme.shapes.large
-                            ) {
-                                Text(
-                                    text = "${outfits.size} Looks",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                        Text(
+                            text = "Explore",
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Discover public outfits",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(PredefinedTags.ALL) { tag ->
+                                TagChip(
+                                    tag = tag,
+                                    selected = tag.id in filterTagIds,
+                                    onClick = {
+                                        filterTagIds = if (tag.id in filterTagIds)
+                                            filterTagIds - tag.id
+                                        else
+                                            filterTagIds + tag.id
+                                    }
                                 )
                             }
-                            Text(
-                                text = "Explore",
-                                style = MaterialTheme.typography.headlineLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Entdecke öffentliche Outfits und speichere deine Favoriten.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                     }
                 }
 
-                items(outfits, key = { it.id }) { outfit ->
+                if (displayedOutfits.isEmpty()) {
+                    item {
+                        Text(
+                            text = "Keine Outfits für die ausgewählten Tags.",
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                items(displayedOutfits, key = { it.id }) { outfit ->
                     ExploreOutfitCard(
                         outfit = outfit,
                         currentUserId = currentUserId,
@@ -291,6 +313,8 @@ fun ExploreOutfitCard(
     val isLiked = currentUserId != null && outfit.likedBy.contains(currentUserId)
     val isSaved = currentUserId != null && outfit.savedBy.contains(currentUserId)
 
+    var commentsExpanded by remember { mutableStateOf(false) }
+    var showAllComments by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<OutfitComment>>(emptyList()) }
     var commentText by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -532,29 +556,42 @@ fun ExploreOutfitCard(
                 )
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-            ) {
-                if (comments.isEmpty()) {
-                    Text(
-                        text = "Noch keine Kommentare. Sei der Erste!",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                } else {
-                    comments.forEach { comment ->
-                        CommentItem(
-                            comment = comment,
-                            currentUserId = currentUserId,
-                            onLikeClick = {
-                                if (currentUserId != null) {
-                                    toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
-                                }
-                            }
+            if (commentsExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                ) {
+                    if (comments.isEmpty()) {
+                        Text(
+                            text = "Noch keine Kommentare. Sei der Erste!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
+                    } else {
+                        val visibleComments = if (showAllComments) comments else comments.take(5)
+                        visibleComments.forEach { comment ->
+                            CommentItem(
+                                comment = comment,
+                                currentUserId = currentUserId,
+                                onLikeClick = {
+                                    if (currentUserId != null) {
+                                        toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
+                                    }
+                                }
+                            )
+                        }
+                        if (comments.size > 5) {
+                            Text(
+                                text = if (showAllComments) "Weniger anzeigen" else "Weitere ${comments.size - 5} Kommentare anzeigen",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .padding(vertical = 4.dp)
+                                    .clickable { showAllComments = !showAllComments }
+                            )
+                        }
                     }
                 }
 
