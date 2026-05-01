@@ -230,8 +230,8 @@ private fun ClothingItemDetailCard(
                 }
 
                 val link = item.purchaseLink
+                Spacer(modifier = Modifier.height(2.dp))
                 if (!link.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
                     FilledTonalButton(
                         onClick = { onPurchaseLinkClick(link) },
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
@@ -248,6 +248,12 @@ private fun ClothingItemDetailCard(
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
+                } else {
+                    Text(
+                        text = "Kein Kauflink hinterlegt",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
