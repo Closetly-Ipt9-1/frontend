@@ -75,7 +75,8 @@ class ClosetViewModel : ViewModel() {
         category: String,
         color: String,
         brand: String,
-        size: String
+        size: String,
+        purchaseLink: String
     ) {
         _isBusy.value = true
         _message.value = "Removing background..."
@@ -94,6 +95,7 @@ class ClosetViewModel : ViewModel() {
                 color = color,
                 brand = brand,
                 size = size,
+                purchaseLink = purchaseLink,
                 onSuccess = { newItem ->
                     _clothes.value = listOf(newItem) + _clothes.value
                     _isBusy.value = false
@@ -130,7 +132,8 @@ class ClosetViewModel : ViewModel() {
         category: String,
         color: String,
         brand: String,
-        size: String
+        size: String,
+        purchaseLink: String
     ) {
         _isBusy.value = true
         _message.value = ""
@@ -141,6 +144,7 @@ class ClosetViewModel : ViewModel() {
             color = color,
             brand = brand,
             size = size,
+            purchaseLink = purchaseLink,
             onSuccess = { updatedItem ->
                 _clothes.value = _clothes.value.map {
                     if (it.id == itemId) updatedItem else it
