@@ -72,8 +72,7 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onSavedOutfitsClick: () -> Unit,
     onCreateAvatarClick: () -> Unit,
-    onCustomizeAvatarClick: (avatarType: String) -> Unit,
-    onSwitchToCustomAvatarClick: () -> Unit,
+    onCustomizeAvatarClick: () -> Unit,
     onPremiumClick: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -189,8 +188,7 @@ fun ProfileScreen(
         AvatarCard(
             avatar = avatar,
             onCreateAvatarClick = onCreateAvatarClick,
-            onCustomizeAvatarClick = onCustomizeAvatarClick,
-            onSwitchToCustomAvatarClick = onSwitchToCustomAvatarClick
+            onCustomizeAvatarClick = onCustomizeAvatarClick
         )
     }
 
@@ -358,8 +356,7 @@ private fun ProfileAction(text: String, icon: ImageVector?, onClick: () -> Unit)
 private fun AvatarCard(
     avatar: Avatar?,
     onCreateAvatarClick: () -> Unit,
-    onCustomizeAvatarClick: (avatarType: String) -> Unit,
-    onSwitchToCustomAvatarClick: () -> Unit
+    onCustomizeAvatarClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -368,13 +365,35 @@ private fun AvatarCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("Avatar", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
                 AvatarPreview(avatar)
-                Text(
-                    text = if (avatar == null) "Noch kein Avatar" else "Dein Avatar",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = if (avatar == null) "Noch kein Avatar" else "Dein Avatar",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (avatar == null) {
+                            "Erstelle einen Look für dein Profil."
+                        } else {
+                            "Passe deinen Avatar jederzeit an."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (avatar != null) {
+                AvatarSettingsSummary(avatar = avatar)
             }
 
             if (avatar == null) {
@@ -387,22 +406,13 @@ private fun AvatarCard(
                 }
             } else {
                 OutlinedButton(
-                    onClick = { onCustomizeAvatarClick(avatar.type) },
+                    onClick = onCustomizeAvatarClick,
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Avatar anpassen")
-                }
-                if (avatar.type == "default") {
-                    OutlinedButton(
-                        onClick = onSwitchToCustomAvatarClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large
-                    ) {
-                        Text("Zu Custom Avatar wechseln")
-                    }
                 }
             }
         }
@@ -411,11 +421,7 @@ private fun AvatarCard(
 
 @Composable
 private fun AvatarPreview(avatar: Avatar?) {
-    val imageUrl = when {
-        avatar?.type == "custom" -> avatar.frontImageUrl
-        avatar?.type == "default" -> avatar.imageUrl
-        else -> null
-    }
+    val imageUrl = avatar?.imageUrl
 
     if (!imageUrl.isNullOrBlank()) {
         AsyncImage(
@@ -425,6 +431,8 @@ private fun AvatarPreview(avatar: Avatar?) {
                 .size(84.dp)
                 .clip(CircleShape)
         )
+    } else if (avatar != null) {
+        DefaultAvatarPreview(avatar = avatar, size = 84)
     } else {
         Box(
             modifier = Modifier
@@ -434,6 +442,82 @@ private fun AvatarPreview(avatar: Avatar?) {
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun DefaultAvatarPreview(avatar: Avatar, size: Int = 120) {
+    val skinColor = when (avatar.skinColor) {
+        "hell" -> Color(0xFFFFDBAC)
+        "mittel" -> Color(0xFFC68642)
+        "dunkel" -> Color(0xFF4A2912)
+        else -> Color(0xFFFFDBAC)
+    }
+    val hairColor = when (avatar.hairColor) {
+        "hellblond" -> Color(0xFFFFE680)
+        "dunkelblond" -> Color(0xFFD4A843)
+        "hellbraun" -> Color(0xFFA0674A)
+        "kastanienbraun" -> Color(0xFF6B2D0E)
+        "dunkelbraun" -> Color(0xFF3B1C0C)
+        "schwarz" -> Color(0xFF1A1A1A)
+        else -> Color(0xFFA0674A)
+    }
+
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .clip(CircleShape)
+            .background(skinColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height((size / 4).dp)
+                .background(hairColor)
+                .align(Alignment.TopCenter)
+        )
+        Icon(
+            imageVector = Icons.Default.Person,
+            contentDescription = "Avatar",
+            modifier = Modifier.size((size / 2).dp),
+            tint = Color.White.copy(alpha = 0.9f)
+        )
+    }
+}
+
+@Composable
+private fun AvatarSettingsSummary(avatar: Avatar) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            if (!avatar.gender.isNullOrBlank()) {
+                Text(
+                    text = avatar.gender.replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            if (!avatar.skinColor.isNullOrBlank()) {
+                Text(
+                    text = "Haut: ${avatar.skinColor}",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            if (!avatar.hairColor.isNullOrBlank()) {
+                Text(
+                    text = "Haar: ${avatar.hairColor}",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
         }
     }
 }

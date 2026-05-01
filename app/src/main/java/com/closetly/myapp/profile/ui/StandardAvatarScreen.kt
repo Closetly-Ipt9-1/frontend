@@ -20,9 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -93,7 +91,7 @@ fun StandardAvatarScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp)
     ) {
-        Text("Standard Avatar", style = MaterialTheme.typography.headlineMedium)
+        Text("Avatar", style = MaterialTheme.typography.headlineMedium)
         Text(
             text = "Passe deinen Avatar an",
             style = MaterialTheme.typography.bodyMedium,
@@ -152,18 +150,6 @@ fun StandardAvatarScreen(
                 Text("Speichern")
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            HorizontalDivider()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = { navController.navigate(Routes.CUSTOM_AVATAR) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Zu Custom Avatar wechseln")
-            }
         }
     }
 }

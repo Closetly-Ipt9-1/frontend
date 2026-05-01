@@ -1,6 +1,5 @@
 package com.closetly.myapp.profile.data
 
-import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -29,10 +28,4 @@ class AvatarRepository {
         return ref.downloadUrl.await().toString()
     }
 
-    suspend fun uploadImage(uri: Uri, filename: String): String {
-        val userId = auth.currentUser?.uid ?: error("Nicht eingeloggt")
-        val ref = storage.reference.child("avatars/$userId/$filename")
-        ref.putFile(uri).await()
-        return ref.downloadUrl.await().toString()
-    }
 }

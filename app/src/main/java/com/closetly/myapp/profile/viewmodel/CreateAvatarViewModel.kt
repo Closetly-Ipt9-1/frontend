@@ -1,6 +1,5 @@
 package com.closetly.myapp.profile.viewmodel
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.closetly.myapp.profile.data.AvatarRepository
@@ -38,7 +37,6 @@ class CreateAvatarViewModel : ViewModel() {
             val imageUrl = repo.getDefaultAvatarUrl(gender, skin, hair)
             repo.saveAvatar(
                 Avatar(
-                    type = "default",
                     gender = gender,
                     hairColor = hair,
                     skinColor = skin,
@@ -50,20 +48,4 @@ class CreateAvatarViewModel : ViewModel() {
         }
     }
 
-    fun saveCustomAvatar(frontUri: Uri, sideUri: Uri) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            val frontUrl = repo.uploadImage(frontUri, "front.jpg")
-            val sideUrl = repo.uploadImage(sideUri, "side.jpg")
-            repo.saveAvatar(
-                Avatar(
-                    type = "custom",
-                    frontImageUrl = frontUrl,
-                    sideImageUrl = sideUrl
-                )
-            )
-            _isLoading.value = false
-            _isSaved.value = true
-        }
-    }
 }
