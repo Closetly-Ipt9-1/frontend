@@ -1,6 +1,7 @@
 package com.closetly.myapp.explore.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -282,6 +283,7 @@ fun ExploreOutfitCard(
     val isSaved = currentUserId != null && outfit.savedBy.contains(currentUserId)
 
     var commentsExpanded by remember { mutableStateOf(false) }
+    var showAllComments by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<OutfitComment>>(emptyList()) }
     var commentText by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -492,7 +494,8 @@ fun ExploreOutfitCard(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     } else {
-                        comments.forEach { comment ->
+                        val visibleComments = if (showAllComments) comments else comments.take(5)
+                        visibleComments.forEach { comment ->
                             CommentItem(
                                 comment = comment,
                                 currentUserId = currentUserId,
@@ -501,6 +504,16 @@ fun ExploreOutfitCard(
                                         toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
                                     }
                                 }
+                            )
+                        }
+                        if (comments.size > 5) {
+                            Text(
+                                text = if (showAllComments) "Weniger anzeigen" else "Weitere ${comments.size - 5} Kommentare anzeigen",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .padding(vertical = 4.dp)
+                                    .clickable { showAllComments = !showAllComments }
                             )
                         }
                     }

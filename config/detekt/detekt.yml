@@ -7,6 +7,12 @@ complexity:
     threshold: 30
   LongParameterList:
     active: false
+  TooManyFunctions:
+    thresholdInClasses: 15
+    thresholdInObjects: 15
+    thresholdInInterfaces: 15
+    thresholdInEnums: 15
+    thresholdInFiles: 15
 
 exceptions:
   TooGenericExceptionCaught:
