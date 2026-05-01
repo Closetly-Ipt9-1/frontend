@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -20,9 +21,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -71,149 +75,256 @@ fun ClosetScreen() {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .navigationBarsPadding(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item(key = "header") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFF173742),
+                                MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        )
+                    )
+                    .padding(22.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "My Closet",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Text(
+                            text = "${filteredClothes.size} saved items",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         item(key = "choose_button") {
-            Button(onClick = { launcher.launch("image/*") }) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Choose Image")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Add clothing",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Upload a photo and tag it for faster outfit building.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = { launcher.launch("image/*") },
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Add")
+                    }
+                }
             }
         }
 
         if (selectedImageUri != null) {
             item(key = "upload_form") {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    AsyncImage(
-                        model = selectedImageUri,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    DropdownSelector(
-                        label = "Category",
-                        options = categoryOptions,
-                        selectedValue = category,
-                        onValueSelected = { category = it }
-                    )
-
-                    DropdownSelector(
-                        label = "Color",
-                        options = colorOptions,
-                        selectedValue = color,
-                        onValueSelected = { color = it }
-                    )
-
-                    DropdownSelector(
-                        label = "Brand",
-                        options = brandOptions,
-                        selectedValue = brand,
-                        onValueSelected = { brand = it }
-                    )
-
-                    DropdownSelector(
-                        label = "Size",
-                        options = sizeOptions,
-                        selectedValue = size,
-                        onValueSelected = { size = it }
-                    )
-
-                    Button(
-                        enabled = !isBusy &&
-                                category.isNotBlank() &&
-                                color.isNotBlank() &&
-                                brand.isNotBlank() &&
-                                size.isNotBlank(),
-                        onClick = {
-                            val uri = selectedImageUri ?: return@Button
-
-                            viewModel.saveClothingItemWithRemovedBackground(
-                                context = context,
-                                imageUri = uri,
-                                category = category,
-                                color = color,
-                                brand = brand,
-                                size = size
-                            )
-
-                            selectedImageUri = null
-                            category = ""
-                            color = ""
-                            brand = ""
-                            size = ""
-                        }
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Save (AI Cut)")
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            selectedImageUri = null
-                            category = ""
-                            color = ""
-                            brand = ""
-                            size = ""
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                                .clip(MaterialTheme.shapes.large),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        DropdownSelector(
+                            label = "Category",
+                            options = categoryOptions,
+                            selectedValue = category,
+                            onValueSelected = { category = it }
+                        )
+
+                        DropdownSelector(
+                            label = "Color",
+                            options = colorOptions,
+                            selectedValue = color,
+                            onValueSelected = { color = it }
+                        )
+
+                        DropdownSelector(
+                            label = "Brand",
+                            options = brandOptions,
+                            selectedValue = brand,
+                            onValueSelected = { brand = it }
+                        )
+
+                        DropdownSelector(
+                            label = "Size",
+                            options = sizeOptions,
+                            selectedValue = size,
+                            onValueSelected = { size = it }
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                enabled = !isBusy &&
+                                        category.isNotBlank() &&
+                                        color.isNotBlank() &&
+                                        brand.isNotBlank() &&
+                                        size.isNotBlank(),
+                                onClick = {
+                                    val uri = selectedImageUri ?: return@Button
+
+                                    viewModel.saveClothingItemWithRemovedBackground(
+                                        context = context,
+                                        imageUri = uri,
+                                        category = category,
+                                        color = color,
+                                        brand = brand,
+                                        size = size
+                                    )
+
+                                    selectedImageUri = null
+                                    category = ""
+                                    color = ""
+                                    brand = ""
+                                    size = ""
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Save")
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    selectedImageUri = null
+                                    category = ""
+                                    color = ""
+                                    brand = ""
+                                    size = ""
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Cancel")
+                            }
                         }
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Cancel")
                     }
                 }
             }
         }
 
         item(key = "filters") {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Filters", style = MaterialTheme.typography.titleMedium)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "Filters",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
 
-                FilterDropdown(
-                    label = "Category",
-                    options = categoryOptions,
-                    selectedValue = selectedCategory,
-                    onValueSelected = { viewModel.setSelectedCategory(it) }
-                )
+                    FilterDropdown(
+                        label = "Category",
+                        options = categoryOptions,
+                        selectedValue = selectedCategory,
+                        onValueSelected = { viewModel.setSelectedCategory(it) }
+                    )
 
-                FilterDropdown(
-                    label = "Color",
-                    options = colorOptions,
-                    selectedValue = selectedColor,
-                    onValueSelected = { viewModel.setSelectedColor(it) }
-                )
+                    FilterDropdown(
+                        label = "Color",
+                        options = colorOptions,
+                        selectedValue = selectedColor,
+                        onValueSelected = { viewModel.setSelectedColor(it) }
+                    )
 
-                FilterDropdown(
-                    label = "Brand",
-                    options = brandOptions,
-                    selectedValue = selectedBrand,
-                    onValueSelected = { viewModel.setSelectedBrand(it) }
-                )
+                    FilterDropdown(
+                        label = "Brand",
+                        options = brandOptions,
+                        selectedValue = selectedBrand,
+                        onValueSelected = { viewModel.setSelectedBrand(it) }
+                    )
 
-                FilterDropdown(
-                    label = "Size",
-                    options = sizeOptions,
-                    selectedValue = selectedSize,
-                    onValueSelected = { viewModel.setSelectedSize(it) }
-                )
+                    FilterDropdown(
+                        label = "Size",
+                        options = sizeOptions,
+                        selectedValue = selectedSize,
+                        onValueSelected = { viewModel.setSelectedSize(it) }
+                    )
 
-                OutlinedButton(onClick = { viewModel.clearFilters() }) {
-                    Text("Clear Filters")
+                    OutlinedButton(
+                        onClick = { viewModel.clearFilters() },
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Text("Clear filters")
+                    }
                 }
             }
         }
 
         if (message.isNotBlank()) {
             item(key = "message") {
-                Text(message)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(14.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
 
@@ -222,8 +333,9 @@ fun ClosetScreen() {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -332,8 +444,10 @@ fun ClothingItemCard(
     var expanded by remember { mutableStateOf(false) }
 
     Card(
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth()
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -342,7 +456,9 @@ fun ClothingItemCard(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(220.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentScale = ContentScale.Crop
                 )
 
@@ -350,7 +466,7 @@ fun ClothingItemCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.46f), MaterialTheme.shapes.medium)
                 ) {
                     IconButton(
                         onClick = { expanded = !expanded },
@@ -387,11 +503,33 @@ fun ClothingItemCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Category: ${item.category}")
-            Text("Color: ${item.color ?: "-"}")
-            Text("Brand: ${item.brand ?: "-"}")
-            Text("Size: ${item.size ?: "-"}")
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.category,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "No details" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                item.color?.takeIf { it.isNotBlank() }?.let {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(getColorFromName(it), CircleShape)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                    )
+                }
+            }
         }
     }
 }

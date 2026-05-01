@@ -48,10 +48,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
 
@@ -179,23 +181,38 @@ fun ExploreScreen() {
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Column(
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp, bottom = 4.dp)
+                            .clip(MaterialTheme.shapes.extraLarge)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.surface,
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                )
+                            )
+                            .padding(22.dp)
                     ) {
-                        Text(
-                            text = "Explore",
-                            style = MaterialTheme.typography.headlineLarge
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Discover public outfits",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "Explore",
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Discover public outfits",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
@@ -275,8 +292,9 @@ fun ExploreOutfitCard(
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -321,31 +339,34 @@ fun ExploreOutfitCard(
                     .fillMaxWidth()
                     .height(300.dp)
                     .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Outfit",
-                        modifier = Modifier.size(42.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                if (outfit.imageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = outfit.imageUrl,
+                        contentDescription = outfit.caption.ifBlank { "Outfit" },
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "Outfit preview",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Real image comes later",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Outfit",
+                            modifier = Modifier.size(42.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Outfit preview",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 

@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import com.google.firebase.FirebaseApp
 import com.closetly.myapp.navigation.ClosetlyApp
 import com.closetly.myapp.premium.func.createPremiumNotificationChannel
+import com.closetly.myapp.ui.theme.ClosetlyTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -15,7 +16,9 @@ class MainActivity : ComponentActivity() {
         createPremiumNotificationChannel(this)
 
         setContent {
-            ClosetlyApp()
+            ClosetlyTheme {
+                ClosetlyApp()
+            }
         }
     }
 }

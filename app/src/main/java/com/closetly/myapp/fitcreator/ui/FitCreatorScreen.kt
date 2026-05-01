@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -47,7 +48,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.closetly.myapp.auth.func.AuthManager
@@ -65,8 +68,39 @@ fun FitCreatorScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
     ) {
-        TabRow(selectedTabIndex = selectedTab) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                            MaterialTheme.colorScheme.background
+                        )
+                    )
+                )
+                .padding(start = 16.dp, top = 18.dp, end = 16.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(
+                text = "Fit Creator",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Build outfits from your closet and publish the best ones.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        TabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
@@ -148,10 +182,27 @@ private fun CreateOutfitTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(
-                text = "Selected items: (${selectedItems.size})",
-                style = MaterialTheme.typography.headlineSmall
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Selected items",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = "${selectedItems.size} pieces in this outfit",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
         if (selectedItems.isNotEmpty()) {
@@ -179,7 +230,7 @@ private fun CreateOutfitTab(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp)),
+                            .clip(MaterialTheme.shapes.large),
                         color = MaterialTheme.colorScheme.errorContainer
                     ) {
                         Text(
@@ -191,7 +242,8 @@ private fun CreateOutfitTab(
                 } else {
                     Button(
                         onClick = { showSaveDialog = true },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large
                     ) {
                         Text("Save Outfit")
                     }
@@ -219,7 +271,8 @@ private fun CreateOutfitTab(
         item {
             Text(
                 text = "Categories",
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
@@ -240,11 +293,11 @@ private fun CreateOutfitTab(
             item {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     categories.forEach { category ->
                         CategoryButton(
@@ -359,6 +412,7 @@ private fun ClothingItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onSelect() },
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
@@ -379,7 +433,8 @@ private fun ClothingItemCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentScale = ContentScale.Crop
             )
 
@@ -418,7 +473,7 @@ private fun SelectedItemCard(
 ) {
     Card(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.primaryContainer)
     ) {
         Box {
@@ -428,7 +483,8 @@ private fun SelectedItemCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentScale = ContentScale.Crop
             )
 
@@ -458,7 +514,9 @@ private fun OutfitCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
             modifier = Modifier
@@ -518,7 +576,8 @@ private fun OutfitCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp)
-                            .clip(RoundedCornerShape(8.dp)),
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -526,7 +585,8 @@ private fun OutfitCard(
 
             Button(
                 onClick = onDelete,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
@@ -552,6 +612,7 @@ private fun CategoryButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp),
+        shape = MaterialTheme.shapes.large,
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primary

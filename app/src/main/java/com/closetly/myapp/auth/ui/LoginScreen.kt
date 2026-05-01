@@ -1,29 +1,61 @@
 package com.closetly.myapp.auth.ui
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import com.closetly.myapp.auth.func.LoginFunc
 import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
-
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.closetly.myapp.auth.func.LoginFunc
 
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onLoginSuccess: () -> Unit,
-){
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val isPreview = LocalInspectionMode.current
@@ -31,52 +63,39 @@ fun LoginScreen(
     val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
 
-    Column (horizontalAlignment = Alignment.CenterHorizontally){
-
-        Text("Login")
+    AuthScreenShell(
+        title = "Willkommen zurück",
+        subtitle = "Melde dich mit deiner E-Mail an."
+    ) {
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Filled.Email,
-                    contentDescription = null,
-                )
-            },
+            label = { Text("E-Mail") },
+            leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
+
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Filled.Lock,
-                    contentDescription = null,
-                )
-            },
+            label = { Text("Passwort") },
+            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Text(
-                        text = if (passwordVisible) "Hide" else "Show",
-                    )
+                    Text(if (passwordVisible) "Ausblenden" else "Anzeigen")
                 }
             },
             singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            )
-        TextButton(onClick = onNavigateToRegister){
-            Text(
-                text="Don't have an account? Create one now!",
-                )
-        }
-
-        ElevatedButton(
+        Button(
             onClick = {
                 if (!isEmailVal(email)) {
                     Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
-                    return@ElevatedButton
+                    return@Button
                 }
 
                 loginFunc?.login(
@@ -90,14 +109,16 @@ fun LoginScreen(
                         Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
                     }
                 )
-            }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
         ) {
-            Text("Login")
+            Text("Einloggen")
         }
 
-        ElevatedButton(
+        OutlinedButton(
             onClick = {
-
                 loginFunc?.login(
                     email = "timonsoom@gmail.com",
                     password = "Timon2008",
@@ -109,11 +130,105 @@ fun LoginScreen(
                         Toast.makeText(context, "Login failed", Toast.LENGTH_SHORT).show()
                     }
                 )
-            }
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Test Login")
         }
 
+        TextButton(onClick = onNavigateToRegister) {
+            Text("Account erstellen")
+        }
+    }
+}
+
+@Composable
+fun AuthScreenShell(
+    title: String,
+    subtitle: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface,
+                        Color(0xFF102A34)
+                    )
+                )
+            )
+            .statusBarsPadding()
+            .imePadding()
+            .padding(horizontal = 22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Spacer(Modifier.height(54.dp))
+
+        RowLogo()
+
+        Spacer(Modifier.height(28.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 14.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(13.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowLogo() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "Closetly",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -124,9 +239,9 @@ fun isEmailVal(email: String): Boolean {
 
 @Preview(showBackground = true)
 @Composable
-fun LoginScreenPreview(){
-        LoginScreen(
-            onNavigateToRegister = {} ,
-            onLoginSuccess = {}
-        )
+fun LoginScreenPreview() {
+    LoginScreen(
+        onNavigateToRegister = {},
+        onLoginSuccess = {}
+    )
 }

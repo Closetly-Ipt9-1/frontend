@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -45,8 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
@@ -145,6 +148,8 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -152,27 +157,60 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Profilbild (unabhängig vom Avatar)
-        if (!photoUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = photoUrl,
-                contentDescription = "Profilbild",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Standard-Profilbild",
-                    modifier = Modifier.size(56.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
                 )
+                .padding(22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (!photoUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = "Profilbild",
+                        modifier = Modifier
+                            .size(124.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(124.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.22f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Standard-Profilbild",
+                            modifier = Modifier.size(58.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = displayName,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
             }
         }
 
@@ -185,7 +223,8 @@ fun ProfileScreen(
 
         OutlinedButton(
             onClick = { showSourceDialog = true },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large
         ) {
             Text("Profilbild ändern")
         }
@@ -201,7 +240,9 @@ fun ProfileScreen(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -221,7 +262,8 @@ fun ProfileScreen(
 
         Button(
             onClick = onPremiumClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large
         ) {
             Icon(imageVector = Icons.Default.Edit, contentDescription = "Manage premium")
             Spacer(modifier = Modifier.width(8.dp))
@@ -233,7 +275,8 @@ fun ProfileScreen(
 
         Button(
             onClick = onEditClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large
         ) {
             Icon(imageVector = Icons.Default.Edit, contentDescription = "Profil bearbeiten")
             Spacer(modifier = Modifier.width(8.dp))
@@ -244,7 +287,8 @@ fun ProfileScreen(
 
         Button(
             onClick = onSavedOutfitsClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large
         ) {
             Text("Gespeicherte Outfits")
         }
@@ -253,7 +297,8 @@ fun ProfileScreen(
 
         Button(
             onClick = onLogoutClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large
         ) {
             Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Ausloggen")
             Spacer(modifier = Modifier.width(8.dp))
@@ -324,14 +369,16 @@ fun ProfileScreen(
         if (avatar == null) {
             Button(
                 onClick = onCreateAvatarClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             ) {
                 Text("Avatar erstellen")
             }
         } else {
             OutlinedButton(
                 onClick = { onCustomizeAvatarClick(avatar!!.type) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
@@ -345,7 +392,8 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = onSwitchToCustomAvatarClick,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
                 ) {
                     Text("Zu Custom Avatar wechseln")
                 }
