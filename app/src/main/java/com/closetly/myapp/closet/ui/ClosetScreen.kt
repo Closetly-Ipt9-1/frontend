@@ -39,6 +39,7 @@ import com.closetly.myapp.closet.func.getColorFromName
 import com.closetly.myapp.closet.model.ClothingItemUi
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod")
 @Composable
 fun ClosetScreen() {
     val viewModel: ClosetViewModel = viewModel()
