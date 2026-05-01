@@ -6,6 +6,7 @@ data class ClothingItem(
     val category: String = "",
     val color: String = "",
     val brand: String = "",
-    val size: String = ""
+    val size: String = "",
+    val purchaseLink: String = ""
 )
 

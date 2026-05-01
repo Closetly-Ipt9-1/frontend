@@ -24,8 +24,8 @@ android {
         applicationId = "com.closetly.myapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.1.1"
+        versionCode = 7
+        versionName = "1.2.1"
 
         val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
         buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
@@ -84,6 +84,7 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.android.billingclient:billing:8.3.0")
+    implementation("com.google.android.gms:play-services-ads:24.0.0")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {

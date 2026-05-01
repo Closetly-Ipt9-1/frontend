@@ -63,9 +63,7 @@ import com.closetly.myapp.closet.data.ClosetRepository
 import com.closetly.myapp.closet.model.ClothingItemUi
 import com.closetly.myapp.fitcreator.model.Outfit
 import com.closetly.myapp.tags.model.PredefinedTags
-import com.closetly.myapp.tags.ui.TagChip
-import com.closetly.myapp.tags.ui.TagSelector
-import androidx.compose.foundation.lazy.LazyRow
+import com.closetly.myapp.tags.model.Tag
 import androidx.compose.material3.OutlinedButton
 
 @Composable
@@ -489,7 +487,7 @@ private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            TagSelector(
+            FitTagSelector(
                 selectedTagIds = filterTagIds,
                 onTagToggle = { viewModel.toggleFilterTag(it) }
             )
@@ -697,7 +695,11 @@ private fun OutfitCard(
                     items(outfit.tags) { tagId ->
                         val tag = PredefinedTags.findById(tagId)
                         if (tag != null) {
-                            TagChip(tag = tag, selected = false, onClick = {})
+                            FitTagPill(
+                                label = tag.name,
+                                selected = false,
+                                onClick = {}
+                            )
                         }
                     }
                 }
@@ -741,6 +743,118 @@ private fun OutfitCard(
                 Text("Delete")
             }
         }
+    }
+}
+
+@Composable
+private fun FitTagSelector(
+    selectedTagIds: List<String>,
+    onTagToggle: (String) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.35f)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Tags",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (selectedTagIds.isEmpty()) {
+                            "Optional, hilft beim Filtern"
+                        } else {
+                            "${selectedTagIds.size} ausgewählt"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            FitTagGroup(
+                label = "Saison",
+                tags = PredefinedTags.SEASON,
+                selectedTagIds = selectedTagIds,
+                onTagToggle = onTagToggle
+            )
+            FitTagGroup(
+                label = "Anlass",
+                tags = PredefinedTags.OCCASION,
+                selectedTagIds = selectedTagIds,
+                onTagToggle = onTagToggle
+            )
+            FitTagGroup(
+                label = "Stil",
+                tags = PredefinedTags.STYLE,
+                selectedTagIds = selectedTagIds,
+                onTagToggle = onTagToggle
+            )
+        }
+    }
+}
+
+@Composable
+private fun FitTagGroup(
+    label: String,
+    tags: List<Tag>,
+    selectedTagIds: List<String>,
+    onTagToggle: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(tags) { tag ->
+                FitTagPill(
+                    label = tag.name,
+                    selected = tag.id in selectedTagIds,
+                    onClick = { onTagToggle(tag.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FitTagPill(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)
+        )
     }
 }
 
@@ -804,7 +918,7 @@ private fun SaveOutfitDialog(
                         )
                     }
 
-                    TagSelector(
+                    FitTagSelector(
                         selectedTagIds = selectedTagIds,
                         onTagToggle = onTagToggle
                     )

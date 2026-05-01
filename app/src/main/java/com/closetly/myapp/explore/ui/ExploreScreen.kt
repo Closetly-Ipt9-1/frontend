@@ -1,5 +1,13 @@
 package com.closetly.myapp.explore.ui
 
+import android.content.Context
+import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,13 +18,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -36,13 +46,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,17 +60,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
 import com.closetly.myapp.tags.model.PredefinedTags
-import com.closetly.myapp.tags.ui.TagChip
+import com.closetly.myapp.tags.model.Tag
 import androidx.compose.foundation.lazy.LazyRow
+import com.closetly.myapp.BuildConfig
+import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.nativead.MediaView
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdOptions
+import com.google.android.gms.ads.nativead.NativeAdView
+
+private const val DEBUG_NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
+private const val RELEASE_NATIVE_AD_UNIT_ID = "ca-app-pub-4262797000632373/3282738680"
+private const val OUTFITS_BEFORE_FIRST_AD = 2
+private const val OUTFITS_BETWEEN_ADS = 4
+private const val PRELOADED_NATIVE_AD_COUNT = 3
+private const val EXPLORE_AD_TAG = "ExploreNativeAd"
 
 data class ExploreOutfit(
     val id: String,
@@ -88,18 +118,40 @@ data class OutfitComment(
 )
 
 @Composable
-fun ExploreScreen() {
+fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
     val firestore = remember { FirebaseFirestore.getInstance() }
+    val context = LocalContext.current
     val currentUserId = AuthManager.getCurrentUserId()
     val currentUsername = AuthManager.getCurrentUser()?.displayName ?: "Anonymous"
+    val nativeAdUnitId = if (BuildConfig.DEBUG) DEBUG_NATIVE_AD_UNIT_ID else RELEASE_NATIVE_AD_UNIT_ID
 
     var outfits by remember { mutableStateOf<List<ExploreOutfit>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var filterTagIds by remember { mutableStateOf<List<String>>(emptyList()) }
+    val preloadedNativeAds = remember { mutableStateListOf<NativeAd>() }
 
     LaunchedEffect(Unit) {
         seedPlaceholderOutfitsIfNeeded(firestore)
+    }
+
+    LaunchedEffect(context, nativeAdUnitId) {
+        preloadNativeAds(
+            context = context,
+            adUnitId = nativeAdUnitId,
+            targetCount = PRELOADED_NATIVE_AD_COUNT,
+            currentCount = { preloadedNativeAds.size },
+            onLoaded = { loadedAd ->
+                preloadedNativeAds.add(loadedAd)
+            }
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            preloadedNativeAds.forEach { it.destroy() }
+            preloadedNativeAds.clear()
+        }
     }
 
     DisposableEffect(Unit) {
@@ -212,47 +264,18 @@ fun ExploreScreen() {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp, bottom = 4.dp)
-                            .clip(MaterialTheme.shapes.extraLarge)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.surface,
-                                        MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                )
-                            )
-                            .padding(20.dp)
-                    ) {
-                        Text(
-                            text = "Explore",
-                            style = MaterialTheme.typography.headlineLarge
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Discover public outfits",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(PredefinedTags.ALL) { tag ->
-                                TagChip(
-                                    tag = tag,
-                                    selected = tag.id in filterTagIds,
-                                    onClick = {
-                                        filterTagIds = if (tag.id in filterTagIds)
-                                            filterTagIds - tag.id
-                                        else
-                                            filterTagIds + tag.id
-                                    }
-                                )
+                    ExploreHeader(
+                        visibleCount = displayedOutfits.size,
+                        selectedTagIds = filterTagIds,
+                        onClearTags = { filterTagIds = emptyList() },
+                        onTagToggle = { tagId ->
+                            filterTagIds = if (tagId in filterTagIds) {
+                                filterTagIds - tagId
+                            } else {
+                                filterTagIds + tagId
                             }
                         }
-                    }
+                    )
                 }
 
                 if (displayedOutfits.isEmpty()) {
@@ -266,12 +289,13 @@ fun ExploreScreen() {
                     }
                 }
 
-                items(displayedOutfits, key = { it.id }) { outfit ->
+                itemsIndexed(displayedOutfits, key = { _, outfit -> outfit.id }) { index, outfit ->
                     ExploreOutfitCard(
                         outfit = outfit,
                         currentUserId = currentUserId,
                         currentUsername = currentUsername,
                         firestore = firestore,
+                        onCardClick = { onOutfitClick(outfit.id) },
                         onLikeClick = {
                             if (currentUserId != null) {
                                 toggleLike(
@@ -291,6 +315,15 @@ fun ExploreScreen() {
                             }
                         }
                     )
+
+                    if (shouldShowAdAfterOutfit(index)) {
+                        val adSlotIndex = adSlotIndexAfterOutfit(index)
+                        NativeAdCard(
+                            preloadedAd = preloadedNativeAds.getOrNull(adSlotIndex),
+                            adUnitId = nativeAdUnitId,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
                 }
 
                 item {
@@ -301,6 +334,450 @@ fun ExploreScreen() {
     }
 }
 
+private fun shouldShowAdAfterOutfit(index: Int): Boolean =
+    (index + 1) >= OUTFITS_BEFORE_FIRST_AD &&
+        ((index + 1) - OUTFITS_BEFORE_FIRST_AD) % OUTFITS_BETWEEN_ADS == 0
+
+private fun adSlotIndexAfterOutfit(index: Int): Int =
+    ((index + 1) - OUTFITS_BEFORE_FIRST_AD) / OUTFITS_BETWEEN_ADS
+
+private fun preloadNativeAds(
+    context: Context,
+    adUnitId: String,
+    targetCount: Int,
+    currentCount: () -> Int,
+    onLoaded: (NativeAd) -> Unit
+) {
+    val missingAds = targetCount - currentCount()
+    if (missingAds <= 0) return
+
+    repeat(missingAds) {
+        AdLoader.Builder(context, adUnitId)
+            .forNativeAd { loadedAd ->
+                onLoaded(loadedAd)
+                Log.d(EXPLORE_AD_TAG, "Preloaded native ad")
+            }
+            .withAdListener(
+                object : AdListener() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        Log.w(
+                            EXPLORE_AD_TAG,
+                            "Native preload failed: code=${adError.code}, domain=${adError.domain}, message=${adError.message}"
+                        )
+                    }
+                }
+            )
+            .withNativeAdOptions(NativeAdOptions.Builder().build())
+            .build()
+            .loadAd(AdRequest.Builder().build())
+    }
+}
+
+@Composable
+private fun NativeAdCard(
+    preloadedAd: NativeAd? = null,
+    adUnitId: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var nativeAd by remember { mutableStateOf<NativeAd?>(null) }
+    var adFailed by remember { mutableStateOf(false) }
+    val adLoader = remember(context, adUnitId) {
+        AdLoader.Builder(context, adUnitId)
+            .forNativeAd { loadedAd ->
+                nativeAd?.destroy()
+                nativeAd = loadedAd
+                adFailed = false
+                Log.d(EXPLORE_AD_TAG, "Native ad loaded")
+            }
+            .withAdListener(
+                object : AdListener() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        adFailed = true
+                        Log.w(
+                            EXPLORE_AD_TAG,
+                            "Native ad failed to load: code=${adError.code}, domain=${adError.domain}, message=${adError.message}"
+                        )
+                    }
+                }
+            )
+            .withNativeAdOptions(NativeAdOptions.Builder().build())
+            .build()
+    }
+
+    LaunchedEffect(adLoader, preloadedAd) {
+        if (preloadedAd == null) {
+            adLoader.loadAd(AdRequest.Builder().build())
+        }
+    }
+
+    DisposableEffect(nativeAd) {
+        onDispose {
+            nativeAd?.destroy()
+        }
+    }
+
+    val loadedAd = preloadedAd ?: nativeAd
+    if (loadedAd != null && !adFailed) {
+        AndroidView(
+            modifier = modifier
+                .fillMaxWidth()
+                .heightIn(min = 300.dp),
+            factory = { createNativeAdView(it) },
+            update = { nativeAdView ->
+                populateNativeAdView(loadedAd, nativeAdView)
+            }
+        )
+    } else {
+        NativeAdPlaceholder(
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun NativeAdPlaceholder(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 180.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Anzeige",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Gesponserter Platz",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+private fun createNativeAdView(context: Context): NativeAdView {
+    val density = context.resources.displayMetrics.density
+    fun Int.dpPx(): Int = (this * density).toInt()
+
+    val nativeAdView = NativeAdView(context).apply {
+        layoutParams = FrameLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    val container = LinearLayout(context).apply {
+        layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+        orientation = LinearLayout.VERTICAL
+        setPadding(14.dpPx(), 14.dpPx(), 14.dpPx(), 14.dpPx())
+        background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 24.dpPx().toFloat()
+            setColor(0xFFFFFFFF.toInt())
+        }
+    }
+
+    val badge = TextView(context).apply {
+        text = "Anzeige"
+        textSize = 12f
+        setTextColor(0xFF6F6F6F.toInt())
+    }
+
+    val mediaView = MediaView(context).apply {
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            180.dpPx()
+        ).apply {
+            topMargin = 10.dpPx()
+        }
+    }
+
+    val titleRow = LinearLayout(context).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        setPadding(0, 12.dpPx(), 0, 0)
+    }
+
+    val iconView = ImageView(context).apply {
+        layoutParams = LinearLayout.LayoutParams(44.dpPx(), 44.dpPx()).apply {
+            rightMargin = 10.dpPx()
+        }
+        scaleType = ImageView.ScaleType.CENTER_CROP
+    }
+
+    val textColumn = LinearLayout(context).apply {
+        orientation = LinearLayout.VERTICAL
+        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+    }
+
+    val headlineView = TextView(context).apply {
+        textSize = 18f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setTextColor(0xFF202124.toInt())
+    }
+
+    val advertiserView = TextView(context).apply {
+        textSize = 13f
+        setTextColor(0xFF6F6F6F.toInt())
+    }
+
+    val bodyView = TextView(context).apply {
+        textSize = 14f
+        setTextColor(0xFF3C4043.toInt())
+        setPadding(0, 10.dpPx(), 0, 0)
+    }
+
+    val callToActionView = Button(context).apply {
+        textSize = 14f
+        setTextColor(0xFFFFFFFF.toInt())
+        backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF6750A4.toInt())
+    }
+
+    textColumn.addView(headlineView)
+    textColumn.addView(advertiserView)
+    titleRow.addView(iconView)
+    titleRow.addView(textColumn)
+
+    container.addView(badge)
+    container.addView(mediaView)
+    container.addView(titleRow)
+    container.addView(bodyView)
+    container.addView(callToActionView)
+    nativeAdView.addView(container)
+
+    nativeAdView.mediaView = mediaView
+    nativeAdView.headlineView = headlineView
+    nativeAdView.advertiserView = advertiserView
+    nativeAdView.iconView = iconView
+    nativeAdView.bodyView = bodyView
+    nativeAdView.callToActionView = callToActionView
+
+    return nativeAdView
+}
+
+private fun populateNativeAdView(
+    nativeAd: NativeAd,
+    nativeAdView: NativeAdView
+) {
+    (nativeAdView.headlineView as TextView).text = nativeAd.headline
+
+    nativeAdView.mediaView?.mediaContent = nativeAd.mediaContent
+
+    nativeAdView.bodyView?.visibility = if (nativeAd.body == null) View.GONE else View.VISIBLE
+    (nativeAdView.bodyView as TextView).text = nativeAd.body
+
+    nativeAdView.callToActionView?.visibility = if (nativeAd.callToAction == null) View.GONE else View.VISIBLE
+    (nativeAdView.callToActionView as Button).text = nativeAd.callToAction
+
+    nativeAdView.iconView?.visibility = if (nativeAd.icon == null) View.GONE else View.VISIBLE
+    (nativeAdView.iconView as ImageView).setImageDrawable(nativeAd.icon?.drawable)
+
+    nativeAdView.advertiserView?.visibility = if (nativeAd.advertiser == null) View.GONE else View.VISIBLE
+    (nativeAdView.advertiserView as TextView).text = nativeAd.advertiser
+
+    nativeAdView.setNativeAd(nativeAd)
+}
+
+@Composable
+private fun ExploreHeader(
+    visibleCount: Int,
+    selectedTagIds: List<String>,
+    onClearTags: () -> Unit,
+    onTagToggle: (String) -> Unit
+) {
+    var filterExpanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 4.dp)
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            )
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Text(
+                    text = "Explore",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Community-Looks entdecken und nach Stimmung filtern.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Surface(
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                contentColor = MaterialTheme.colorScheme.primary,
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text(
+                    text = "$visibleCount Looks",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                )
+            }
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.background.copy(alpha = 0.34f)
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.large)
+                        .clickable { filterExpanded = !filterExpanded }
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Filter",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = if (selectedTagIds.isEmpty()) {
+                                "Alle Looks anzeigen"
+                            } else {
+                                "${selectedTagIds.size} Filter aktiv"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = if (filterExpanded) {
+                            Icons.Default.KeyboardArrowUp
+                        } else {
+                            Icons.Default.KeyboardArrowDown
+                        },
+                        contentDescription = if (filterExpanded) "Filter schließen" else "Filter öffnen",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (filterExpanded) {
+                    ExploreFilterChip(
+                        label = "Alle",
+                        selected = selectedTagIds.isEmpty(),
+                        onClick = onClearTags
+                    )
+                    ExploreTagRow(
+                        label = "Saison",
+                        tags = PredefinedTags.SEASON,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = onTagToggle
+                    )
+                    ExploreTagRow(
+                        label = "Anlass",
+                        tags = PredefinedTags.OCCASION,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = onTagToggle
+                    )
+                    ExploreTagRow(
+                        label = "Stil",
+                        tags = PredefinedTags.STYLE,
+                        selectedTagIds = selectedTagIds,
+                        onTagToggle = onTagToggle
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExploreTagRow(
+    label: String,
+    tags: List<Tag>,
+    selectedTagIds: List<String>,
+    onTagToggle: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(tags) { tag ->
+                ExploreFilterChip(
+                    label = tag.name,
+                    selected = tag.id in selectedTagIds,
+                    onClick = { onTagToggle(tag.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExploreFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)
+        )
+    }
+}
+
 @Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 fun ExploreOutfitCard(
@@ -308,13 +785,14 @@ fun ExploreOutfitCard(
     currentUserId: String?,
     currentUsername: String,
     firestore: FirebaseFirestore,
+    onCardClick: () -> Unit = {},
     onLikeClick: () -> Unit,
     onSaveClick: () -> Unit
 ) {
     val isLiked = currentUserId != null && outfit.likedBy.contains(currentUserId)
     val isSaved = currentUserId != null && outfit.savedBy.contains(currentUserId)
 
-    var commentsExpanded by remember { mutableStateOf(false) }
+    var commentsExpanded by remember { mutableStateOf(true) }
     var showAllComments by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<OutfitComment>>(emptyList()) }
     var commentText by remember { mutableStateOf("") }
@@ -413,7 +891,8 @@ fun ExploreOutfitCard(
                                 MaterialTheme.colorScheme.background
                             )
                         )
-                    ),
+                    )
+                    .clickable { onCardClick() },
                 contentAlignment = Alignment.Center
             ) {
                 if (outfit.imageUrl.isNotBlank()) {
@@ -561,7 +1040,7 @@ fun ExploreOutfitCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 18.dp)
                 ) {
                     if (comments.isEmpty()) {
                         Text(
@@ -598,49 +1077,89 @@ fun ExploreOutfitCard(
 
                 if (currentUserId != null) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = commentText,
-                            onValueChange = { commentText = it },
-                            placeholder = { Text("Kommentar schreiben") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(
-                                onSend = {
-                                    if (commentText.isNotBlank()) {
-                                        addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
-                                        commentText = ""
-                                        keyboardController?.hide()
-                                    }
-                                }
-                            ),
-                            maxLines = 3,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        IconButton(
-                            onClick = {
-                                if (commentText.isNotBlank()) {
-                                    addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
-                                    commentText = ""
-                                    keyboardController?.hide()
-                                }
+                    CommentInputBar(
+                        value = commentText,
+                        onValueChange = { commentText = it },
+                        onSend = {
+                            if (commentText.isNotBlank()) {
+                                addComment(firestore, outfit.id, currentUserId, currentUsername, commentText.trim())
+                                commentText = ""
+                                keyboardController?.hide()
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Send,
-                                contentDescription = "Senden",
-                                tint = if (commentText.isNotBlank()) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentInputBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 54.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+                textStyle = TextStyle(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { onSend() }),
+                maxLines = 3,
+                decorationBox = { innerTextField ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (value.isBlank()) {
+                            Text(
+                                text = "Kommentar schreiben",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        innerTextField()
                     }
+                }
+            )
+
+            Surface(
+                modifier = Modifier.size(42.dp),
+                shape = CircleShape,
+                color = if (value.isNotBlank()) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.background.copy(alpha = 0.42f)
+                },
+                contentColor = if (value.isNotBlank()) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            ) {
+                IconButton(onClick = onSend) {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = "Senden",
+                        modifier = Modifier.size(19.dp)
+                    )
                 }
             }
         }

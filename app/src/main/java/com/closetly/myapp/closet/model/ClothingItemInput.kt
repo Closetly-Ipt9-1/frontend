@@ -5,5 +5,6 @@ data class ClothingItemInput(
     val imageUrl: String,
     val color: String?,
     val brand: String?,
-    val size: String?
+    val size: String?,
+    val purchaseLink: String?
 )
