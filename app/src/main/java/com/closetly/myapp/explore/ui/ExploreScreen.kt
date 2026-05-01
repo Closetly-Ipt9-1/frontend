@@ -1,5 +1,13 @@
 package com.closetly.myapp.explore.ui
 
+import android.content.Context
+import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,11 +18,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -50,17 +60,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
 import com.closetly.myapp.tags.model.PredefinedTags
 import com.closetly.myapp.tags.ui.TagChip
 import androidx.compose.foundation.lazy.LazyRow
+import com.closetly.myapp.BuildConfig
+import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.nativead.MediaView
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdOptions
+import com.google.android.gms.ads.nativead.NativeAdView
+
+private const val DEBUG_NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
+private const val RELEASE_NATIVE_AD_UNIT_ID = "ca-app-pub-4262797000632373/3282738680"
+private const val OUTFITS_BEFORE_FIRST_AD = 2
+private const val OUTFITS_BETWEEN_ADS = 4
+private const val EXPLORE_AD_TAG = "ExploreNativeAd"
 
 data class ExploreOutfit(
     val id: String,
@@ -266,7 +293,7 @@ fun ExploreScreen() {
                     }
                 }
 
-                items(displayedOutfits, key = { it.id }) { outfit ->
+                itemsIndexed(displayedOutfits, key = { _, outfit -> outfit.id }) { index, outfit ->
                     ExploreOutfitCard(
                         outfit = outfit,
                         currentUserId = currentUserId,
@@ -291,6 +318,12 @@ fun ExploreScreen() {
                             }
                         }
                     )
+
+                    if (shouldShowAdAfterOutfit(index)) {
+                        NativeAdCard(
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
                 }
 
                 item {
@@ -299,6 +332,226 @@ fun ExploreScreen() {
             }
         }
     }
+}
+
+private fun shouldShowAdAfterOutfit(index: Int): Boolean =
+    (index + 1) >= OUTFITS_BEFORE_FIRST_AD &&
+        ((index + 1) - OUTFITS_BEFORE_FIRST_AD) % OUTFITS_BETWEEN_ADS == 0
+
+@Composable
+private fun NativeAdCard(
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var nativeAd by remember { mutableStateOf<NativeAd?>(null) }
+    var adFailed by remember { mutableStateOf(false) }
+    val adUnitId = if (BuildConfig.DEBUG) DEBUG_NATIVE_AD_UNIT_ID else RELEASE_NATIVE_AD_UNIT_ID
+    val adLoader = remember(context, adUnitId) {
+        AdLoader.Builder(context, adUnitId)
+            .forNativeAd { loadedAd ->
+                nativeAd?.destroy()
+                nativeAd = loadedAd
+                adFailed = false
+                Log.d(EXPLORE_AD_TAG, "Native ad loaded")
+            }
+            .withAdListener(
+                object : AdListener() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        adFailed = true
+                        Log.w(
+                            EXPLORE_AD_TAG,
+                            "Native ad failed to load: code=${adError.code}, domain=${adError.domain}, message=${adError.message}"
+                        )
+                    }
+                }
+            )
+            .withNativeAdOptions(NativeAdOptions.Builder().build())
+            .build()
+    }
+
+    LaunchedEffect(adLoader) {
+        adLoader
+            .loadAd(AdRequest.Builder().build())
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            nativeAd?.destroy()
+        }
+    }
+
+    val loadedAd = nativeAd
+    if (loadedAd != null && !adFailed) {
+        AndroidView(
+            modifier = modifier
+                .fillMaxWidth()
+                .heightIn(min = 300.dp),
+            factory = { createNativeAdView(it) },
+            update = { nativeAdView ->
+                populateNativeAdView(loadedAd, nativeAdView)
+            }
+        )
+    } else {
+        NativeAdPlaceholder(
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun NativeAdPlaceholder(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 180.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Anzeige",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Gesponserter Platz",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+private fun createNativeAdView(context: Context): NativeAdView {
+    val density = context.resources.displayMetrics.density
+    fun Int.dpPx(): Int = (this * density).toInt()
+
+    val nativeAdView = NativeAdView(context).apply {
+        layoutParams = FrameLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    val container = LinearLayout(context).apply {
+        layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+        orientation = LinearLayout.VERTICAL
+        setPadding(14.dpPx(), 14.dpPx(), 14.dpPx(), 14.dpPx())
+        background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 24.dpPx().toFloat()
+            setColor(0xFFFFFFFF.toInt())
+        }
+    }
+
+    val badge = TextView(context).apply {
+        text = "Anzeige"
+        textSize = 12f
+        setTextColor(0xFF6F6F6F.toInt())
+    }
+
+    val mediaView = MediaView(context).apply {
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            180.dpPx()
+        ).apply {
+            topMargin = 10.dpPx()
+        }
+    }
+
+    val titleRow = LinearLayout(context).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        setPadding(0, 12.dpPx(), 0, 0)
+    }
+
+    val iconView = ImageView(context).apply {
+        layoutParams = LinearLayout.LayoutParams(44.dpPx(), 44.dpPx()).apply {
+            rightMargin = 10.dpPx()
+        }
+        scaleType = ImageView.ScaleType.CENTER_CROP
+    }
+
+    val textColumn = LinearLayout(context).apply {
+        orientation = LinearLayout.VERTICAL
+        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+    }
+
+    val headlineView = TextView(context).apply {
+        textSize = 18f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setTextColor(0xFF202124.toInt())
+    }
+
+    val advertiserView = TextView(context).apply {
+        textSize = 13f
+        setTextColor(0xFF6F6F6F.toInt())
+    }
+
+    val bodyView = TextView(context).apply {
+        textSize = 14f
+        setTextColor(0xFF3C4043.toInt())
+        setPadding(0, 10.dpPx(), 0, 0)
+    }
+
+    val callToActionView = Button(context).apply {
+        textSize = 14f
+        setTextColor(0xFFFFFFFF.toInt())
+        backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF6750A4.toInt())
+    }
+
+    textColumn.addView(headlineView)
+    textColumn.addView(advertiserView)
+    titleRow.addView(iconView)
+    titleRow.addView(textColumn)
+
+    container.addView(badge)
+    container.addView(mediaView)
+    container.addView(titleRow)
+    container.addView(bodyView)
+    container.addView(callToActionView)
+    nativeAdView.addView(container)
+
+    nativeAdView.mediaView = mediaView
+    nativeAdView.headlineView = headlineView
+    nativeAdView.advertiserView = advertiserView
+    nativeAdView.iconView = iconView
+    nativeAdView.bodyView = bodyView
+    nativeAdView.callToActionView = callToActionView
+
+    return nativeAdView
+}
+
+private fun populateNativeAdView(
+    nativeAd: NativeAd,
+    nativeAdView: NativeAdView
+) {
+    (nativeAdView.headlineView as TextView).text = nativeAd.headline
+
+    nativeAdView.mediaView?.mediaContent = nativeAd.mediaContent
+
+    nativeAdView.bodyView?.visibility = if (nativeAd.body == null) View.GONE else View.VISIBLE
+    (nativeAdView.bodyView as TextView).text = nativeAd.body
+
+    nativeAdView.callToActionView?.visibility = if (nativeAd.callToAction == null) View.GONE else View.VISIBLE
+    (nativeAdView.callToActionView as Button).text = nativeAd.callToAction
+
+    nativeAdView.iconView?.visibility = if (nativeAd.icon == null) View.GONE else View.VISIBLE
+    (nativeAdView.iconView as ImageView).setImageDrawable(nativeAd.icon?.drawable)
+
+    nativeAdView.advertiserView?.visibility = if (nativeAd.advertiser == null) View.GONE else View.VISIBLE
+    (nativeAdView.advertiserView as TextView).text = nativeAd.advertiser
+
+    nativeAdView.setNativeAd(nativeAd)
 }
 
 @Composable
