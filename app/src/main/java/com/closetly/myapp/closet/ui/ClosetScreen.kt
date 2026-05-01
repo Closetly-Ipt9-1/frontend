@@ -60,12 +60,14 @@ fun ClosetScreen() {
     var color by remember { mutableStateOf("") }
     var brand by remember { mutableStateOf("") }
     var size by remember { mutableStateOf("") }
+    var purchaseLink by remember { mutableStateOf("") }
 
     var editingItemId by remember { mutableStateOf<String?>(null) }
     var editCategory by remember { mutableStateOf("") }
     var editColor by remember { mutableStateOf("") }
     var editBrand by remember { mutableStateOf("") }
     var editSize by remember { mutableStateOf("") }
+    var editPurchaseLink by remember { mutableStateOf("") }
 
     val categoryOptions = listOf("Jacket", "Pants", "Pullover", "Shirt", "Shoes", "Watch")
     val colorOptions = listOf("Black", "White", "Blue", "Red", "Green", "Gray", "Beige", "Yellow", "Orange", "Violet", "Purple")
@@ -210,6 +212,15 @@ fun ClosetScreen() {
                             onValueSelected = { size = it }
                         )
 
+                        OutlinedTextField(
+                            value = purchaseLink,
+                            onValueChange = { purchaseLink = it },
+                            label = { Text("Kauflink (optional)") },
+                            placeholder = { Text("https://...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -229,7 +240,8 @@ fun ClosetScreen() {
                                         category = category,
                                         color = color,
                                         brand = brand,
-                                        size = size
+                                        size = size,
+                                        purchaseLink = purchaseLink
                                     )
 
                                     selectedImageUri = null
@@ -237,6 +249,7 @@ fun ClosetScreen() {
                                     color = ""
                                     brand = ""
                                     size = ""
+                                    purchaseLink = ""
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -251,6 +264,7 @@ fun ClosetScreen() {
                                     color = ""
                                     brand = ""
                                     size = ""
+                                    purchaseLink = ""
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -406,6 +420,15 @@ fun ClosetScreen() {
                             onValueSelected = { editSize = it }
                         )
 
+                        OutlinedTextField(
+                            value = editPurchaseLink,
+                            onValueChange = { editPurchaseLink = it },
+                            label = { Text("Kauflink (optional)") },
+                            placeholder = { Text("https://...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -424,7 +447,8 @@ fun ClosetScreen() {
                                         category = editCategory,
                                         color = editColor,
                                         brand = editBrand,
-                                        size = editSize
+                                        size = editSize,
+                                        purchaseLink = editPurchaseLink
                                     )
                                     editingItemId = null
                                 },
@@ -482,6 +506,7 @@ fun ClosetScreen() {
                                 editColor = item.color ?: ""
                                 editBrand = item.brand ?: ""
                                 editSize = item.size ?: ""
+                                editPurchaseLink = item.purchaseLink ?: ""
                             },
                             onDelete = {
                                 viewModel.deleteClothingItem(item.id)

@@ -22,6 +22,7 @@ class ClosetRepository {
         color: String,
         brand: String,
         size: String,
+        purchaseLink: String,
         onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
@@ -59,6 +60,7 @@ class ClosetRepository {
                             color = color,
                             brand = brand,
                             size = size,
+                            purchaseLink = purchaseLink,
                             onSuccess = onSuccess,
                             onError = onError
                         )
@@ -79,6 +81,7 @@ class ClosetRepository {
         color: String,
         brand: String,
         size: String,
+        purchaseLink: String,
         onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
@@ -89,6 +92,7 @@ class ClosetRepository {
             "color" to color.ifBlank { null },
             "brand" to brand.ifBlank { null },
             "size" to size.ifBlank { null },
+            "purchaseLink" to purchaseLink.ifBlank { null },
             "createdAt" to System.currentTimeMillis()
         )
 
@@ -102,7 +106,8 @@ class ClosetRepository {
                         imageUrl = imageUrl,
                         color = color.ifBlank { null },
                         brand = brand.ifBlank { null },
-                        size = size.ifBlank { null }
+                        size = size.ifBlank { null },
+                        purchaseLink = purchaseLink.ifBlank { null }
                     )
                 )
             }
@@ -133,6 +138,7 @@ class ClosetRepository {
                         color = it.getString("color"),
                         brand = it.getString("brand"),
                         size = it.getString("size"),
+                        purchaseLink = it.getString("purchaseLink"),
                         tags = (it.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                     )
                 }
@@ -165,6 +171,7 @@ class ClosetRepository {
         color: String,
         brand: String,
         size: String,
+        purchaseLink: String,
         onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
@@ -172,7 +179,8 @@ class ClosetRepository {
             "category" to category,
             "color" to color.ifBlank { null },
             "brand" to brand.ifBlank { null },
-            "size" to size.ifBlank { null }
+            "size" to size.ifBlank { null },
+            "purchaseLink" to purchaseLink.ifBlank { null }
         )
 
         db.collection("clothingItems")
@@ -191,6 +199,7 @@ class ClosetRepository {
                                 color = doc.getString("color"),
                                 brand = doc.getString("brand"),
                                 size = doc.getString("size"),
+                                purchaseLink = doc.getString("purchaseLink"),
                                 tags = (doc.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                             )
                         )

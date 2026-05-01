@@ -21,11 +21,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.closetly.myapp.ads.ui.BannerAd
 import com.closetly.myapp.auth.ui.LoginScreen
 import com.closetly.myapp.auth.ui.RegisterScreen
 import com.closetly.myapp.closet.ui.ClosetScreen
 import com.closetly.myapp.explore.ui.ExploreScreen
+import com.closetly.myapp.explore.ui.OutfitDetailScreen
 import com.closetly.myapp.fitcreator.ui.FitCreatorScreen
 import com.closetly.myapp.profile.ui.ProfileScreen
 import com.closetly.myapp.profile.ui.EditProfileScreen
@@ -151,7 +154,24 @@ fun ClosetlyApp() {
                 )
             }
 
-            composable(Routes.EXPLORE) { ExploreScreen() }
+            composable(Routes.EXPLORE) {
+                ExploreScreen(
+                    onOutfitClick = { outfitId ->
+                        navController.navigate(Routes.outfitDetail(outfitId))
+                    }
+                )
+            }
+
+            composable(
+                route = Routes.OUTFIT_DETAIL,
+                arguments = listOf(navArgument("outfitId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val outfitId = backStackEntry.arguments?.getString("outfitId") ?: return@composable
+                OutfitDetailScreen(
+                    outfitId = outfitId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable(Routes.FIT_CREATOR) { FitCreatorScreen() }
             composable(Routes.CLOSET) { ClosetScreen() }
             composable(Routes.MANAGE_SUBSCRIPTION) { PremiumScreen() }
