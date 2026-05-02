@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.m306.closetly.app-mergeDebugResources-83:/values-v30/values-v30.xml",
+            "outputFile": "com.closetly.myapp-mergeDebugResources-89:/values-v30/values-v30.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\44b0d45a665ea84d678f82aa4f93db40\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.13\\transforms\\aae7ae21fe3154096908b6fb66f5f346\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

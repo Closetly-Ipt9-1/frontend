@@ -38,7 +38,8 @@ import coil.compose.AsyncImage
 import com.closetly.myapp.closet.func.getColorFromName
 import com.closetly.myapp.closet.model.ClothingItemUi
 import com.closetly.myapp.tags.model.PredefinedTags
-
+import com.m306.closetly.ai.ShoppingEngine
+import com.closetly.myapp.closet.ui.ShoppingAdCard
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod")
 @Composable
@@ -121,6 +122,15 @@ fun ClosetScreen() {
                         )
                     }
                 }
+
+            }
+        }
+        item(key = "shopping_ad") {
+            val recommendation = remember(filteredClothes) {
+                ShoppingEngine.generateRecommendation(filteredClothes)
+            }
+            recommendation?.let {
+                ShoppingAdCard(recommendation = it)
             }
         }
 
@@ -595,6 +605,7 @@ fun ClosetScreen() {
         item(key = "bottom_space") {
             Spacer(modifier = Modifier.height(24.dp))
         }
+
     }
 }
 

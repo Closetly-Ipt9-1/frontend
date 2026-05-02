@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.m306.closetly.app-mergeDebugResources-83:/values-hdpi-v4/values-hdpi-v4.xml",
+            "outputFile": "com.closetly.myapp-mergeDebugResources-89:/values-hdpi-v4/values-hdpi-v4.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\6b04ed482a7ed42ce531f05c20d01bf9\\transformed\\appcompat-1.7.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.13\\transforms\\d1a915669d40713ea151364afb3684c5\\transformed\\appcompat-1.7.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
