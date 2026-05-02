@@ -253,11 +253,13 @@ private fun PlanCard(
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "Billed by Google Play",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.68f)
-                    )
+                    if (offer != null) {
+                        Text(
+                            text = "Google Play price: ${offer.formattedPrice}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.68f)
+                        )
+                    }
                 }
 
                 Button(

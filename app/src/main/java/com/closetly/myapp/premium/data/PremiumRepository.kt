@@ -98,11 +98,15 @@ class PremiumRepository(
                 val plan = PremiumPlan.entries.firstOrNull {
                     it.basePlanId == offerDetails.basePlanId
                 } ?: return@mapNotNull null
+                val formattedPrice = offerDetails.pricingPhases.pricingPhaseList
+                    .lastOrNull()
+                    ?.formattedPrice
+                    ?: plan.monthlyPrice
 
                 PremiumOffer(
                     plan = plan,
                     offerToken = offerDetails.offerToken,
-                    formattedPrice = plan.monthlyPrice
+                    formattedPrice = formattedPrice
                 )
             }.sortedBy { it.plan.durationMonths }
 
