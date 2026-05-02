@@ -11,25 +11,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -55,6 +57,7 @@ data class SavedOutfit(
     val createdAt: Long
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SavedOutfitsScreen(onBack: () -> Unit = {}) {
     val firestore = remember { FirebaseFirestore.getInstance() }
@@ -64,148 +67,152 @@ fun SavedOutfitsScreen(onBack: () -> Unit = {}) {
     var isLoading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
-    if (currentUserId == null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "You are not logged in",
-                style = MaterialTheme.typography.bodyLarge
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Saved Outfits") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
             )
         }
-        return
-    }
+    ) { innerPadding ->
+        if (currentUserId == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "You are not logged in",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            return@Scaffold
+        }
 
-    DisposableEffect(Unit) {
-        val listener = firestore
-            .collection("outfits")
-            .whereArrayContains("savedBy", currentUserId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    errorText = error.message
+        DisposableEffect(Unit) {
+            val listener = firestore
+                .collection("outfits")
+                .whereArrayContains("savedBy", currentUserId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        errorText = error.message
+                        isLoading = false
+                        return@addSnapshotListener
+                    }
+
+                    val loadedOutfits = snapshot
+                        ?.documents
+                        ?.mapNotNull { document ->
+                            SavedOutfit(
+                                id = document.id,
+                                ownerId = document.getString("ownerId") ?: "",
+                                username = document.getString("username") ?: "Unknown",
+                                caption = document.getString("caption") ?: "",
+                                imageUrl = document.getString("imageUrl") ?: "",
+                                isPublic = document.getBoolean("isPublic") ?: false,
+                                saveCount = document.getLong("saveCount")?.toInt() ?: 0,
+                                savedBy = (document.get("savedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
+                                createdAt = document.getLong("createdAt") ?: 0L
+                            )
+                        }
+                        ?.sortedByDescending { it.createdAt }
+                        .orEmpty()
+
+                    outfits = loadedOutfits
                     isLoading = false
-                    return@addSnapshotListener
+                    errorText = null
                 }
 
-                val loadedOutfits = snapshot
-                    ?.documents
-                    ?.mapNotNull { document ->
-                        SavedOutfit(
-                            id = document.id,
-                            ownerId = document.getString("ownerId") ?: "",
-                            username = document.getString("username") ?: "Unknown",
-                            caption = document.getString("caption") ?: "",
-                            imageUrl = document.getString("imageUrl") ?: "",
-                            isPublic = document.getBoolean("isPublic") ?: false,
-                            saveCount = document.getLong("saveCount")?.toInt() ?: 0,
-                            savedBy = (document.get("savedBy") as? List<*>)?.filterIsInstance<String>().orEmpty(),
-                            createdAt = document.getLong("createdAt") ?: 0L
-                        )
-                    }
-                    ?.sortedByDescending { it.createdAt }
-                    .orEmpty()
-
-                outfits = loadedOutfits
-                isLoading = false
-                errorText = null
-            }
-
-        onDispose {
-            listener.remove()
-        }
-    }
-
-    when {
-        isLoading -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+            onDispose {
+                listener.remove()
             }
         }
 
-        errorText != null -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = errorText ?: "Something went wrong",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        }
-
-        outfits.isEmpty() -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No saved outfits yet",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        }
-
-        else -> {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    Column(
-                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Back"
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Saved Outfits",
-                            style = MaterialTheme.typography.headlineLarge
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Your saved outfit collection",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
+            }
 
-                items(outfits, key = { it.id }) { outfit ->
-                    SavedOutfitCard(
-                        outfit = outfit,
-                        onUnsaveClick = {
-                            toggleSave(
-                                firestore = firestore,
-                                outfitId = outfit.id,
-                                userId = currentUserId
-                            )
-                        }
+            errorText != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = errorText ?: "Something went wrong",
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
+            }
 
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
+            outfits.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No saved outfits yet",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        Column(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) {
+                            Text(
+                                text = "Your saved outfit collection",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    items(outfits, key = { it.id }) { outfit ->
+                        SavedOutfitCard(
+                            outfit = outfit,
+                            onUnsaveClick = {
+                                toggleSave(
+                                    firestore = firestore,
+                                    outfitId = outfit.id,
+                                    userId = currentUserId
+                                )
+                            }
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
         }
