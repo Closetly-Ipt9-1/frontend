@@ -2,21 +2,31 @@ package com.closetly.myapp.fitcreator.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.closetly.myapp.closet.data.ClosetRepository
 import com.closetly.myapp.closet.model.ClothingItemUi
 import com.closetly.myapp.fitcreator.data.OutfitRepository
 import com.closetly.myapp.fitcreator.model.Outfit
 import com.closetly.myapp.premium.data.PremiumAccessRepository
+import com.m306.closetly.ai.AiEngine
+import com.m306.closetly.ai.DailyOutfitManager
+import com.m306.closetly.ai.DailyOutfitResult
+import com.m306.closetly.ai.GeneratedOutfit
+import com.m306.closetly.ai.SeasonEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class FitCreatorViewModel : ViewModel() {
 
-    private val repository = OutfitRepository()
+    private val repository             = OutfitRepository()
     private val premiumAccessRepository = PremiumAccessRepository()
+    private val closetRepository       = ClosetRepository()
+    private val dailyOutfitManager     = DailyOutfitManager()
 
+    // ── Existing state ────────────────────────────────────────────────────────
     private val _selectedItems = MutableStateFlow<List<ClothingItemUi>>(emptyList())
     val selectedItems: StateFlow<List<ClothingItemUi>> = _selectedItems
 
@@ -36,8 +46,7 @@ class FitCreatorViewModel : ViewModel() {
     val filterTagIds: StateFlow<List<String>> = _filterTagIds
 
     val filteredOutfits: StateFlow<List<Outfit>> = combine(
-        _outfits,
-        _filterTagIds
+        _outfits, _filterTagIds
     ) { outfits, filterTags ->
         if (filterTags.isEmpty()) outfits
         else outfits.filter { outfit -> filterTags.all { it in outfit.tags } }
@@ -47,20 +56,95 @@ class FitCreatorViewModel : ViewModel() {
         initialValue = emptyList()
     )
 
+    // ── AI state ──────────────────────────────────────────────────────────────
+    private val _dailyOutfit = MutableStateFlow<GeneratedOutfit?>(null)
+    val dailyOutfit: StateFlow<GeneratedOutfit?> = _dailyOutfit
+
+    private val _outfitSuggestions = MutableStateFlow<List<GeneratedOutfit>>(emptyList())
+    val outfitSuggestions: StateFlow<List<GeneratedOutfit>> = _outfitSuggestions
+
+    private val _aiLoading = MutableStateFlow(false)
+    val aiLoading: StateFlow<Boolean> = _aiLoading
+
+    private val _aiMessage = MutableStateFlow<String?>(null)
+    val aiMessage: StateFlow<String?> = _aiMessage
+
+    private val _wardrobeItems = MutableStateFlow<List<ClothingItemUi>>(emptyList())
+
+    // ── Load wardrobe + generate AI on init ───────────────────────────────────
+    init {
+        loadWardrobeAndGenerateAi()
+    }
+
+    private fun loadWardrobeAndGenerateAi() {
+        _aiLoading.value = true
+        closetRepository.getClothingItems(
+            onSuccess = { items ->
+                _wardrobeItems.value = items
+                viewModelScope.launch {
+                    generateDailyOutfit(items)
+                    generateSuggestions(items)
+                    _aiLoading.value = false
+                }
+            },
+            onError = {
+                _aiLoading.value = false
+                _aiMessage.value = "Konnte Garderobe nicht laden."
+            }
+        )
+    }
+
+    private suspend fun generateDailyOutfit(items: List<ClothingItemUi>) {
+        val result = dailyOutfitManager.generateTodayOutfit(items)
+        _dailyOutfit.value = when (result) {
+            is DailyOutfitResult.Generated    -> result.outfit
+            is DailyOutfitResult.AlreadyExists -> result.outfit
+            is DailyOutfitResult.Error        -> null
+        }
+        if (result is DailyOutfitResult.Error) {
+            _aiMessage.value = result.message
+        }
+    }
+
+    private fun generateSuggestions(items: List<ClothingItemUi>) {
+        _outfitSuggestions.value = AiEngine.generateOutfitSuggestions(
+            clothes = items,
+            count = 5,
+            season = SeasonEngine.currentSeason()
+        )
+    }
+
+    fun regenerateDailyOutfit() {
+        viewModelScope.launch {
+            _aiLoading.value = true
+            val result = dailyOutfitManager.regenerateTodayOutfit(_wardrobeItems.value)
+            _dailyOutfit.value = when (result) {
+                is DailyOutfitResult.Generated    -> result.outfit
+                is DailyOutfitResult.AlreadyExists -> result.outfit
+                is DailyOutfitResult.Error        -> null
+            }
+            _aiLoading.value = false
+        }
+    }
+
+    fun loadSuggestionIntoCreator(outfit: GeneratedOutfit) {
+        _selectedItems.value = listOfNotNull(
+            outfit.top, outfit.bottom, outfit.jacket, outfit.shoes
+        )
+        _errorMessage.value = null
+    }
+
+    // ── Existing functions (unchanged) ────────────────────────────────────────
     fun addItem(item: ClothingItemUi) {
         val currentItems = _selectedItems.value
-        val isCategorySelected = currentItems.any { it.category == item.category }
-
-        if (isCategorySelected) {
+        if (currentItems.any { it.category == item.category }) {
             _errorMessage.value = "Sie können nur ein Item pro Kategorie auswählen"
             return
         }
-
         if (hasConflictingCategory(currentItems, item)) {
             _errorMessage.value = "Sie können nicht gleichzeitig ${item.category} und ein anderes Oberteil wählen"
             return
         }
-
         _selectedItems.value = currentItems + item
         _errorMessage.value = null
     }
@@ -71,15 +155,12 @@ class FitCreatorViewModel : ViewModel() {
 
     fun validateOutfit(): Boolean {
         val selectedItems = _selectedItems.value
-
         val hasBottomWear = selectedItems.any {
             it.category in listOf("Hose", "Pants", "Rock", "Skirt", "Shorts")
         }
-
         val hasTopWear = selectedItems.any {
             it.category in listOf("Oberteil", "Top", "Shirt", "T-Shirt", "Bluse", "Blouse", "Pullover", "Jumper")
         }
-
         return hasBottomWear && hasTopWear
     }
 
@@ -95,9 +176,7 @@ class FitCreatorViewModel : ViewModel() {
             onError("Bitte wählen Sie mindestens eine Hose und ein Oberteil")
             return
         }
-
         _isLoading.value = true
-
         premiumAccessRepository.canAddOutfit { canAdd, reason ->
             if (!canAdd) {
                 _isLoading.value = false
@@ -106,7 +185,6 @@ class FitCreatorViewModel : ViewModel() {
                 onError(message)
                 return@canAddOutfit
             }
-
             repository.saveOutfit(
                 caption = caption,
                 imageUrl = imageUrl,
@@ -133,14 +211,8 @@ class FitCreatorViewModel : ViewModel() {
     fun loadMyOutfits() {
         _isLoading.value = true
         repository.getMyOutfits(
-            onSuccess = {
-                _outfits.value = it
-                _isLoading.value = false
-            },
-            onError = {
-                _isLoading.value = false
-                _errorMessage.value = it.message
-            }
+            onSuccess = { _outfits.value = it; _isLoading.value = false },
+            onError = { _isLoading.value = false; _errorMessage.value = it.message }
         )
     }
 
@@ -166,8 +238,12 @@ class FitCreatorViewModel : ViewModel() {
         _filterTagIds.value = current
     }
 
-    fun clearFilterTags() {
-        _filterTagIds.value = emptyList()
+    fun clearFilterTags() { _filterTagIds.value = emptyList() }
+
+    fun clearSelection() {
+        _selectedItems.value = emptyList()
+        _selectedTagIds.value = emptyList()
+        _errorMessage.value = null
     }
 
     private fun hasConflictingCategory(currentItems: List<ClothingItemUi>, newItem: ClothingItemUi): Boolean {
@@ -180,11 +256,5 @@ class FitCreatorViewModel : ViewModel() {
             if (newItem.category == cat && currentItems.any { it.category in conflicted }) return true
         }
         return false
-    }
-
-    fun clearSelection() {
-        _selectedItems.value = emptyList()
-        _selectedTagIds.value = emptyList()
-        _errorMessage.value = null
     }
 }
