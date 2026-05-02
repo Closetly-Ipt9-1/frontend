@@ -1,0 +1,17 @@
+package com.closetly.myapp.navigation
+
+object Routes {
+    const val LOGIN = "login"
+    const val REGISTER = "register"
+    const val EXPLORE = "explore"
+    const val FIT_CREATOR = "fit_creator"
+    const val CLOSET = "closet"
+    const val PROFILE = "profile"
+    const val EDIT_PROFILE = "edit_profile"
+    const val SAVED_OUTFITS = "saved_outfits"
+    const val STANDARD_AVATAR = "standard_avatar"
+    const val MANAGE_SUBSCRIPTION = "manage_subscription"
+    const val OUTFIT_DETAIL = "outfit_detail/{outfitId}"
+
+    fun outfitDetail(outfitId: String) = "outfit_detail/$outfitId"
+}
