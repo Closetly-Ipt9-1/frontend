@@ -48,15 +48,16 @@ class GoogleAuthFunc(
             )
             auth.signInWithCredential(firebaseCredential).await()
             Log.d(TAG, "signInWithGoogle:success")
+        } catch (exception: GoogleIdTokenParsingException) {
+            logAndRethrow("signInWithGoogle:invalidToken", exception)
         } catch (exception: Exception) {
-            val message = if (exception is GoogleIdTokenParsingException) {
-                "signInWithGoogle:invalidToken"
-            } else {
-                "signInWithGoogle:firebaseFailure"
-            }
-            Log.w(TAG, message, exception)
-            throw exception
+            logAndRethrow("signInWithGoogle:firebaseFailure", exception)
         }
+    }
+
+    private fun logAndRethrow(message: String, exception: Exception): Nothing {
+        Log.w(TAG, message, exception)
+        throw exception
     }
 
     companion object {

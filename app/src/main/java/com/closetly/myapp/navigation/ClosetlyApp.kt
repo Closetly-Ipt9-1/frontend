@@ -12,6 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,6 +39,7 @@ import com.closetly.myapp.auth.func.AuthManager
 import com.closetly.myapp.profile.ui.SavedOutfitsScreen
 import com.closetly.myapp.profile.ui.StandardAvatarScreen
 import com.closetly.myapp.profile.viewmodel.ProfileViewModel
+import com.closetly.myapp.premium.data.PremiumAccessRepository
 import com.closetly.myapp.premium.ui.PremiumScreen
 
 @Composable
@@ -45,6 +49,8 @@ fun ClosetlyApp() {
     val currentDestination = navBackStackEntry?.destination
 
     val profileViewModel: ProfileViewModel = viewModel()
+    val premiumAccessRepository = remember { PremiumAccessRepository() }
+    var showAdsForFreeUser by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentDestination?.route) {
         if (currentDestination?.route == Routes.PROFILE) {
@@ -65,14 +71,38 @@ fun ClosetlyApp() {
         Routes.CLOSET,
         Routes.PROFILE,
     )
+    val showAdSlot = currentDestination?.route in setOf(
+        Routes.EXPLORE,
+        Routes.FIT_CREATOR,
+        Routes.CLOSET,
+        Routes.PROFILE,
+    )
     val startDestination =
         if (AuthManager.getCurrentUserId() != null) Routes.EXPLORE else Routes.LOGIN
+
+    LaunchedEffect(currentDestination?.route, AuthManager.getCurrentUserId()) {
+        if (!showAdSlot || AuthManager.getCurrentUserId() == null) {
+            showAdsForFreeUser = false
+            return@LaunchedEffect
+        }
+
+        premiumAccessRepository.getSubscriptionStatus(
+            onSuccess = { status ->
+                showAdsForFreeUser = !status.isPremium
+            },
+            onError = {
+                showAdsForFreeUser = false
+            }
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column {
-                BannerAd()
+                if (showAdsForFreeUser) {
+                    BannerAd()
+                }
                 if (showBottomBar) {
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
@@ -162,6 +192,7 @@ fun ClosetlyApp() {
 
             composable(Routes.EXPLORE) {
                 ExploreScreen(
+                    showAds = showAdsForFreeUser,
                     onOutfitClick = { outfitId ->
                         navController.navigate(Routes.outfitDetail(outfitId))
                     }

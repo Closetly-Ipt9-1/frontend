@@ -4,7 +4,7 @@ object PremiumBillingConfig {
     const val PRODUCT_ID = "closetly_premium"
     const val MONTHLY_BASE_PLAN_ID = "monthly"
     const val YEARLY_BASE_PLAN_ID = "yearly"
-    const val TWO_YEAR_BASE_PLAN_ID = "two-year"
+    const val THREE_MONTHLY_BASE_PLAN_ID = "three-monthly"
 }
 
 enum class PremiumPlan(
@@ -17,23 +17,23 @@ enum class PremiumPlan(
     Monthly(
         basePlanId = PremiumBillingConfig.MONTHLY_BASE_PLAN_ID,
         title = "Monthly",
-        displayPrice = "CHF 9.99",
-        monthlyPrice = "CHF 9.99 / month",
+        displayPrice = "CHF 9.95",
+        monthlyPrice = "CHF 9.95 / month",
         durationMonths = 1
+    ),
+    ThreeMonthly(
+        basePlanId = PremiumBillingConfig.THREE_MONTHLY_BASE_PLAN_ID,
+        title = "3 months",
+        displayPrice = "CHF 22.50",
+        monthlyPrice = "CHF 7.50 / month",
+        durationMonths = 3
     ),
     Yearly(
         basePlanId = PremiumBillingConfig.YEARLY_BASE_PLAN_ID,
         title = "12 months",
-        displayPrice = "CHF 59.88",
-        monthlyPrice = "CHF 4.99 / month",
+        displayPrice = "CHF 59.40",
+        monthlyPrice = "CHF 4.95 / month",
         durationMonths = 12
-    ),
-    TwoYear(
-        basePlanId = PremiumBillingConfig.TWO_YEAR_BASE_PLAN_ID,
-        title = "24 months",
-        displayPrice = "CHF 71.76",
-        monthlyPrice = "CHF 2.99 / month",
-        durationMonths = 24
     )
 }
 

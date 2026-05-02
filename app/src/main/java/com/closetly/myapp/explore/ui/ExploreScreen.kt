@@ -118,7 +118,10 @@ data class OutfitComment(
 )
 
 @Composable
-fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
+fun ExploreScreen(
+    showAds: Boolean = false,
+    onOutfitClick: (String) -> Unit = {}
+) {
     val firestore = remember { FirebaseFirestore.getInstance() }
     val context = LocalContext.current
     val currentUserId = AuthManager.getCurrentUserId()
@@ -135,7 +138,13 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
         seedPlaceholderOutfitsIfNeeded(firestore)
     }
 
-    LaunchedEffect(context, nativeAdUnitId) {
+    LaunchedEffect(context, nativeAdUnitId, showAds) {
+        if (!showAds) {
+            preloadedNativeAds.forEach { it.destroy() }
+            preloadedNativeAds.clear()
+            return@LaunchedEffect
+        }
+
         preloadNativeAds(
             context = context,
             adUnitId = nativeAdUnitId,
@@ -316,7 +325,7 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                         }
                     )
 
-                    if (shouldShowAdAfterOutfit(index)) {
+                    if (showAds && shouldShowAdAfterOutfit(index)) {
                         val adSlotIndex = adSlotIndexAfterOutfit(index)
                         NativeAdCard(
                             preloadedAd = preloadedNativeAds.getOrNull(adSlotIndex),
