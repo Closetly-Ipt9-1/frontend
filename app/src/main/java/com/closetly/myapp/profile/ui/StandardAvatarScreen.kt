@@ -53,6 +53,11 @@ private val hairOptions = listOf(
     "schwarz" to Color(0xFF1A1A1A)
 )
 
+private val genderOptions = listOf(
+    "männlich" to "Male",
+    "weiblich" to "Female"
+)
+
 @Composable
 fun StandardAvatarScreen(
     navController: NavController,
@@ -93,28 +98,28 @@ fun StandardAvatarScreen(
     ) {
         Text("Avatar", style = MaterialTheme.typography.headlineMedium)
         Text(
-            text = "Passe deinen Avatar an",
+            text = "Customize your avatar",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text("Geschlecht", style = MaterialTheme.typography.titleMedium)
+        Text("Gender", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("männlich", "weiblich").forEach { option ->
+            genderOptions.forEach { (value, label) ->
                 FilterChip(
-                    selected = selectedGender == option,
-                    onClick = { selectedGender = option },
-                    label = { Text(option) }
+                    selected = selectedGender == value,
+                    onClick = { selectedGender = value },
+                    label = { Text(label) }
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Hautfarbe", style = MaterialTheme.typography.titleMedium)
+        Text("Skin color", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         ColorSwatchRow(
             options = skinOptions,
@@ -124,7 +129,7 @@ fun StandardAvatarScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Haarfarbe", style = MaterialTheme.typography.titleMedium)
+        Text("Hair color", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         ColorSwatchRow(
             options = hairOptions,
@@ -147,7 +152,7 @@ fun StandardAvatarScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Speichern")
+                Text("Save")
             }
 
         }

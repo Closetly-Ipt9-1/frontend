@@ -174,7 +174,7 @@ fun SavedOutfitsScreen(onBack: () -> Unit = {}) {
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Zurück"
+                                contentDescription = "Back"
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))

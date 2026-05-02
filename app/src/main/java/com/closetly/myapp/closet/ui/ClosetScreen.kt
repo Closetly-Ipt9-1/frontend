@@ -107,7 +107,7 @@ fun ClosetScreen() {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Schrank",
+                        text = "Closet",
                         style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
@@ -117,7 +117,7 @@ fun ClosetScreen() {
                         shape = MaterialTheme.shapes.large
                     ) {
                         Text(
-                            text = "${filteredClothes.size} Teile gefunden",
+                            text = "${filteredClothes.size} items found",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
@@ -143,12 +143,12 @@ fun ClosetScreen() {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Kleidung hinzufügen",
+                            text = "Add clothing",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Foto hochladen und direkt Kategorie, Farbe, Marke und Größe setzen.",
+                            text = "Upload a photo and set category, color, brand, and size right away.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -159,7 +159,7 @@ fun ClosetScreen() {
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Hinzufügen")
+                        Text("Add")
                     }
                 }
             }
@@ -187,28 +187,28 @@ fun ClosetScreen() {
                         )
 
                         DropdownSelector(
-                            label = "Kategorie",
+                            label = "Category",
                             options = categoryOptions,
                             selectedValue = category,
                             onValueSelected = { category = it }
                         )
 
                         DropdownSelector(
-                            label = "Farbe",
+                            label = "Color",
                             options = colorOptions,
                             selectedValue = color,
                             onValueSelected = { color = it }
                         )
 
                         DropdownSelector(
-                            label = "Marke",
+                            label = "Brand",
                             options = brandOptions,
                             selectedValue = brand,
                             onValueSelected = { brand = it }
                         )
 
                         DropdownSelector(
-                            label = "Größe",
+                            label = "Size",
                             options = sizeOptions,
                             selectedValue = size,
                             onValueSelected = { size = it }
@@ -220,13 +220,13 @@ fun ClosetScreen() {
                                 purchaseLink = it
                                 purchaseLinkError = it.isNotBlank() && !android.util.Patterns.WEB_URL.matcher(it).matches()
                             },
-                            label = { Text("Kauflink (optional)") },
+                            label = { Text("Purchase link (optional)") },
                             placeholder = { Text("https://...") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             isError = purchaseLinkError,
                             supportingText = if (purchaseLinkError) {
-                                { Text("Bitte einen gültigen Link eingeben (z. B. https://...)") }
+                                { Text("Please enter a valid link (e.g. https://...)") }
                             } else null
                         )
 
@@ -266,7 +266,7 @@ fun ClosetScreen() {
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Speichern")
+                                Text("Save")
                             }
                             OutlinedButton(
                                 onClick = {
@@ -282,7 +282,7 @@ fun ClosetScreen() {
                             ) {
                                 Icon(Icons.Default.Close, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Abbrechen")
+                                Text("Cancel")
                             }
                         }
                     }
@@ -301,7 +301,7 @@ fun ClosetScreen() {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "Kategorien & Filter",
+                        "Category & Filter",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -309,7 +309,7 @@ fun ClosetScreen() {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
                             ClosetFilterChip(
-                                label = "Alle",
+                                label = "All",
                                 isSelected = selectedCategory == null,
                                 onClick = { viewModel.setSelectedCategory(null) }
                             )
@@ -330,7 +330,7 @@ fun ClosetScreen() {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
                             ClosetFilterChip(
-                                label = "Alle Farben",
+                                label = "All Color",
                                 isSelected = selectedColor == null,
                                 onClick = { viewModel.setSelectedColor(null) }
                             )
@@ -367,7 +367,7 @@ fun ClosetScreen() {
                         shape = MaterialTheme.shapes.large,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Filter zurücksetzen")
+                        Text("Reset filters")
                     }
                 }
             }
@@ -438,13 +438,13 @@ fun ClosetScreen() {
                                 editPurchaseLink = it
                                 editPurchaseLinkError = it.isNotBlank() && !android.util.Patterns.WEB_URL.matcher(it).matches()
                             },
-                            label = { Text("Kauflink (optional)") },
+                            label = { Text("Purchase link (optional)") },
                             placeholder = { Text("https://...") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             isError = editPurchaseLinkError,
                             supportingText = if (editPurchaseLinkError) {
-                                { Text("Bitte einen gültigen Link eingeben (z. B. https://...)") }
+                                { Text("Please enter a valid link (e.g. https://...)") }
                             } else null
                         )
 
@@ -501,7 +501,7 @@ fun ClosetScreen() {
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Text(
-                        text = "Noch keine Kleidung gefunden. Füge oben dein erstes Teil hinzu.",
+                        text = "No clothing found yet. Add your first item above.",
                         modifier = Modifier.padding(18.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -644,7 +644,7 @@ private fun ClosetGridItemCard(
                     onDismissRequest = { expanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Bearbeiten") },
+                        text = { Text("Edit") },
                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                         onClick = {
                             onEdit()
@@ -652,7 +652,7 @@ private fun ClosetGridItemCard(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Löschen") },
+                        text = { Text("Delete") },
                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
                         onClick = {
                             onDelete()
@@ -685,7 +685,7 @@ private fun ClosetGridItemCard(
                     )
                 }
                 Text(
-                    text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "Keine Details" },
+                    text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "No details" },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
@@ -803,7 +803,7 @@ fun DropdownSelector(
     onValueSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorSelector = label == "Color" || label == "Farbe"
+    val isColorSelector = label == "Color" || label == "Color"
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -888,7 +888,7 @@ fun FilterDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorFilter = label == "Color" || label == "Farbe"
+    val isColorFilter = label == "Color" || label == "Color"
 
     ExposedDropdownMenuBox(
         expanded = expanded,

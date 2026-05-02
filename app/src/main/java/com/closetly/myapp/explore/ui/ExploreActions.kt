@@ -17,7 +17,7 @@ internal fun seedPlaceholderOutfitsIfNeeded(firestore: FirebaseFirestore) {
                 mapOf(
                     "ownerId" to "placeholder-user-1",
                     "username" to "Closetly",
-                    "caption" to "Minimaler Schwarz-Weiß-Look",
+                    "caption" to "Minimal black and white look",
                     "imageUrl" to "",
                     "isPublic" to true,
                     "likeCount" to 0,
@@ -34,7 +34,7 @@ internal fun seedPlaceholderOutfitsIfNeeded(firestore: FirebaseFirestore) {
                 mapOf(
                     "ownerId" to "placeholder-user-2",
                     "username" to "Closetly",
-                    "caption" to "Streetwear Look für den Alltag",
+                    "caption" to "Everyday streetwear look",
                     "imageUrl" to "",
                     "isPublic" to true,
                     "likeCount" to 0,

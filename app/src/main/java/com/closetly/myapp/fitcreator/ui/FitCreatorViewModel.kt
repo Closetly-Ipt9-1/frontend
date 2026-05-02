@@ -52,12 +52,12 @@ class FitCreatorViewModel : ViewModel() {
         val isCategorySelected = currentItems.any { it.category == item.category }
 
         if (isCategorySelected) {
-            _errorMessage.value = "Sie können nur ein Item pro Kategorie auswählen"
+            _errorMessage.value = "You can only select one item per category"
             return
         }
 
         if (hasConflictingCategory(currentItems, item)) {
-            _errorMessage.value = "Sie können nicht gleichzeitig ${item.category} und ein anderes Oberteil wählen"
+            _errorMessage.value = "You cannot select ${item.category} and another top at the same time"
             return
         }
 
@@ -92,7 +92,7 @@ class FitCreatorViewModel : ViewModel() {
         onError: (String) -> Unit
     ) {
         if (!validateOutfit()) {
-            onError("Bitte wählen Sie mindestens eine Hose und ein Oberteil")
+            onError("Please select at least one pair of pants and one top")
             return
         }
 

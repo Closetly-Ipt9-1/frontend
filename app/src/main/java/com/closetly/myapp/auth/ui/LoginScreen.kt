@@ -70,8 +70,8 @@ fun LoginScreen(
     var isGoogleLoading by remember { mutableStateOf(false) }
 
     AuthScreenShell(
-        title = "Willkommen zurück",
-        subtitle = "Melde dich mit deiner E-Mail an."
+        title = "Welcome back",
+        subtitle = "Sign in with your email."
     ) {
         OutlinedTextField(
             value = email,
@@ -85,12 +85,12 @@ fun LoginScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Passwort") },
+            label = { Text("Password") },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Text(if (passwordVisible) "Ausblenden" else "Anzeigen")
+                    Text(if (passwordVisible) "Hide" else "Show")
                 }
             },
             singleLine = true,
@@ -120,11 +120,11 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Einloggen")
+            Text("Log in")
         }
 
         GoogleSignInButton(
-            text = "Mit Google einloggen",
+            text = "Log in with Google",
             isLoading = isGoogleLoading,
             onClick = {
                 val authFunc = googleAuthFunc ?: return@GoogleSignInButton
@@ -167,7 +167,7 @@ fun LoginScreen(
         }
 
         TextButton(onClick = onNavigateToRegister) {
-            Text("Account erstellen")
+            Text("Create account")
         }
     }
 }
@@ -191,7 +191,7 @@ fun GoogleSignInButton(
             color = Color(0xFF4285F4)
         )
         Spacer(Modifier.width(10.dp))
-        Text(if (isLoading) "Google wird geoeffnet..." else text)
+        Text(if (isLoading) "Opening Google..." else text)
     }
 }
 

@@ -36,19 +36,19 @@ fun TagSelector(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         TagGroup(
-            label = "Jahreszeit",
+            label = "Season",
             tags = PredefinedTags.SEASON,
             selectedTagIds = selectedTagIds,
             onTagToggle = onTagToggle
         )
         TagGroup(
-            label = "Anlass",
+            label = "Occasion",
             tags = PredefinedTags.OCCASION,
             selectedTagIds = selectedTagIds,
             onTagToggle = onTagToggle
         )
         TagGroup(
-            label = "Stil",
+            label = "Style",
             tags = PredefinedTags.STYLE,
             selectedTagIds = selectedTagIds,
             onTagToggle = onTagToggle

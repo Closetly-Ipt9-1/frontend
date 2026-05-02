@@ -93,12 +93,12 @@ fun FitCreatorScreen() {
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "Outfits erstellen",
+                text = "Create outfits",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Kombiniere deine Kleidung digital und speichere fertige Looks.",
+                text = "Combine your clothes digitally and save finished looks.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -112,12 +112,12 @@ fun FitCreatorScreen() {
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { Text("Erstellen") }
+                text = { Text("Create") }
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { Text("Meine Outfits") }
+                text = { Text("My outfits") }
             )
         }
 
@@ -216,7 +216,7 @@ private fun CreateOutfitTab(
                         color = MaterialTheme.colorScheme.errorContainer
                     ) {
                         Text(
-                            text = "Wähle mindestens ein Oberteil und eine Hose aus.",
+                            text = "Select at least one top and one pair of pants.",
                             modifier = Modifier.padding(12.dp),
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -229,7 +229,7 @@ private fun CreateOutfitTab(
                             .height(48.dp),
                         shape = MaterialTheme.shapes.large
                     ) {
-                        Text("Outfit speichern")
+                        Text("Save outfit")
                     }
                 }
             }
@@ -254,7 +254,7 @@ private fun CreateOutfitTab(
 
         item {
             Text(
-                text = "Kleidung auswählen",
+                text = "Choose clothing",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold
             )
@@ -278,7 +278,7 @@ private fun CreateOutfitTab(
                 ) {
                     item {
                         CategoryChip(
-                            label = "Alle",
+                            label = "All",
                             isSelected = selectedCategory == null,
                             onClick = { selectedCategory = null }
                         )
@@ -352,12 +352,12 @@ private fun OutfitPreviewCard(
             ) {
                 Column {
                     Text(
-                        text = "Outfit erstellen",
+                        text = "Create outfit",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${selectedItems.size} Teile ausgewählt",
+                        text = "${selectedItems.size} items selected",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -372,7 +372,7 @@ private fun OutfitPreviewCard(
                             contentColor = MaterialTheme.colorScheme.onSurface
                         )
                     ) {
-                        Text("Leeren")
+                        Text("Clear")
                     }
                 }
             }
@@ -396,7 +396,7 @@ private fun OutfitPreviewCard(
             ) {
                 if (selectedItems.isEmpty()) {
                     Text(
-                        text = "Tippe unten auf Kleidungsstücke, um dein Outfit zu bauen.",
+                        text = "Tap clothing items below to build your outfit.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(18.dp)
@@ -451,7 +451,7 @@ private fun EmptyClosetHint() {
         color = MaterialTheme.colorScheme.surface
     ) {
         Text(
-            text = "Noch keine passenden Kleidungsstücke gefunden. Füge zuerst Kleidung im Schrank hinzu.",
+            text = "No matching clothing items found yet. Add clothing to your closet first.",
             modifier = Modifier.padding(18.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -496,7 +496,7 @@ private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
         if (filterTagIds.isNotEmpty()) {
             item {
                 OutlinedButton(onClick = { viewModel.clearFilterTags() }) {
-                    Text("Filter zurücksetzen")
+                    Text("Reset filters")
                 }
             }
         }
@@ -505,7 +505,7 @@ private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
             item {
                 Text(
                     text = if (filterTagIds.isNotEmpty())
-                        "Keine Outfits für die ausgewählten Tags."
+                        "No outfits for the selected tags."
                     else
                         "You haven't created any outfits yet. Start by creating your first outfit!",
                     modifier = Modifier.padding(24.dp),
@@ -773,9 +773,9 @@ private fun FitTagSelector(
                     )
                     Text(
                         text = if (selectedTagIds.isEmpty()) {
-                            "Optional, hilft beim Filtern"
+                            "Optional, helps with filtering"
                         } else {
-                            "${selectedTagIds.size} ausgewählt"
+                            "${selectedTagIds.size} selected"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -784,19 +784,19 @@ private fun FitTagSelector(
             }
 
             FitTagGroup(
-                label = "Saison",
+                label = "Season",
                 tags = PredefinedTags.SEASON,
                 selectedTagIds = selectedTagIds,
                 onTagToggle = onTagToggle
             )
             FitTagGroup(
-                label = "Anlass",
+                label = "Occasion",
                 tags = PredefinedTags.OCCASION,
                 selectedTagIds = selectedTagIds,
                 onTagToggle = onTagToggle
             )
             FitTagGroup(
-                label = "Stil",
+                label = "Style",
                 tags = PredefinedTags.STYLE,
                 selectedTagIds = selectedTagIds,
                 onTagToggle = onTagToggle
@@ -895,14 +895,14 @@ private fun SaveOutfitDialog(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Outfit speichern",
+                        text = "Save outfit",
                         style = MaterialTheme.typography.headlineSmall
                     )
 
                     TextField(
                         value = caption,
                         onValueChange = onCaptionChange,
-                        label = { Text("Name oder Beschreibung") },
+                        label = { Text("Name or description") },
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -911,7 +911,7 @@ private fun SaveOutfitDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Öffentlich teilen")
+                        Text("Share publicly")
                         Switch(
                             checked = isPublic,
                             onCheckedChange = onPublicChange
@@ -935,7 +935,7 @@ private fun SaveOutfitDialog(
                             enabled = !isLoading,
                             shape = MaterialTheme.shapes.large
                         ) {
-                            Text("Abbrechen")
+                            Text("Cancel")
                         }
 
                         Button(
@@ -949,7 +949,7 @@ private fun SaveOutfitDialog(
                             if (isLoading) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
                             } else {
-                                Text("Speichern")
+                                Text("Save")
                             }
                         }
                     }
