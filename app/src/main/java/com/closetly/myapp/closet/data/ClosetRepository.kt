@@ -23,6 +23,8 @@ class ClosetRepository {
         brand: String,
         size: String,
         purchaseLink: String,
+        style: String = "",
+        tags: List<String> = emptyList(),
         onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
@@ -39,11 +41,8 @@ class ClosetRepository {
         }
 
         val tempFile = File.createTempFile("clothing_upload", ".jpg", context.cacheDir)
-
         tempFile.outputStream().use { output ->
-            inputStream.use { input ->
-                input.copyTo(output)
-            }
+            inputStream.use { input -> input.copyTo(output) }
         }
 
         RembgApiHelper.removeBackground(
@@ -61,6 +60,8 @@ class ClosetRepository {
                             brand = brand,
                             size = size,
                             purchaseLink = purchaseLink,
+                            style = style,
+                            tags = tags,
                             onSuccess = onSuccess,
                             onError = onError
                         )
@@ -68,9 +69,7 @@ class ClosetRepository {
                     onError = onError
                 )
             },
-            onError = { error ->
-                onError(Exception(error))
-            }
+            onError = { error -> onError(Exception(error)) }
         )
     }
 
@@ -82,18 +81,22 @@ class ClosetRepository {
         brand: String,
         size: String,
         purchaseLink: String,
+        style: String = "",
+        tags: List<String> = emptyList(),
         onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
         val data = hashMapOf(
-            "userId" to userId,
-            "category" to category,
-            "imageUrl" to imageUrl,
-            "color" to color.ifBlank { null },
-            "brand" to brand.ifBlank { null },
-            "size" to size.ifBlank { null },
+            "userId"      to userId,
+            "category"    to category,
+            "imageUrl"    to imageUrl,
+            "color"       to color.ifBlank { null },
+            "brand"       to brand.ifBlank { null },
+            "size"        to size.ifBlank { null },
             "purchaseLink" to purchaseLink.ifBlank { null },
-            "createdAt" to System.currentTimeMillis()
+            "style"       to style.ifBlank { null },
+            "tags"        to tags,
+            "createdAt"   to System.currentTimeMillis()
         )
 
         db.collection("clothingItems")
@@ -107,13 +110,13 @@ class ClosetRepository {
                         color = color.ifBlank { null },
                         brand = brand.ifBlank { null },
                         size = size.ifBlank { null },
-                        purchaseLink = purchaseLink.ifBlank { null }
+                        purchaseLink = purchaseLink.ifBlank { null },
+                        style = style.ifBlank { null },
+                        tags = tags
                     )
                 )
             }
-            .addOnFailureListener {
-                onError(it)
-            }
+            .addOnFailureListener { onError(it) }
     }
 
     fun getClothingItems(
@@ -139,14 +142,13 @@ class ClosetRepository {
                         brand = it.getString("brand"),
                         size = it.getString("size"),
                         purchaseLink = it.getString("purchaseLink"),
+                        style = it.getString("style"),
                         tags = (it.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                     )
                 }
                 onSuccess(items)
             }
-            .addOnFailureListener {
-                onError(it)
-            }
+            .addOnFailureListener { onError(it) }
     }
 
     fun deleteClothingItem(
@@ -157,12 +159,8 @@ class ClosetRepository {
         db.collection("clothingItems")
             .document(itemId)
             .delete()
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener {
-                onError(it)
-            }
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onError(it) }
     }
 
     fun updateClothingItem(
@@ -172,15 +170,19 @@ class ClosetRepository {
         brand: String,
         size: String,
         purchaseLink: String,
+        style: String = "",
+        tags: List<String> = emptyList(),
         onSuccess: (ClothingItemUi) -> Unit,
         onError: (Exception) -> Unit
     ) {
         val data = mapOf(
-            "category" to category,
-            "color" to color.ifBlank { null },
-            "brand" to brand.ifBlank { null },
-            "size" to size.ifBlank { null },
-            "purchaseLink" to purchaseLink.ifBlank { null }
+            "category"    to category,
+            "color"       to color.ifBlank { null },
+            "brand"       to brand.ifBlank { null },
+            "size"        to size.ifBlank { null },
+            "purchaseLink" to purchaseLink.ifBlank { null },
+            "style"       to style.ifBlank { null },
+            "tags"        to tags
         )
 
         db.collection("clothingItems")
@@ -200,16 +202,13 @@ class ClosetRepository {
                                 brand = doc.getString("brand"),
                                 size = doc.getString("size"),
                                 purchaseLink = doc.getString("purchaseLink"),
+                                style = doc.getString("style"),
                                 tags = (doc.get("tags") as? List<*>)?.filterIsInstance<String>().orEmpty()
                             )
                         )
                     }
-                    .addOnFailureListener {
-                        onError(it)
-                    }
+                    .addOnFailureListener { onError(it) }
             }
-            .addOnFailureListener {
-                onError(it)
-            }
+            .addOnFailureListener { onError(it) }
     }
 }

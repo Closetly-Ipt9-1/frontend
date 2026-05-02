@@ -1,31 +1,43 @@
 package com.m306.closetly.ai
 
-import com.m306.closetly.data.ClothingItem
-import kotlin.random.Random
-
-data class Outfit(
-    val top: ClothingItem?,
-    val bottom: ClothingItem?
-)
+import com.closetly.myapp.closet.model.ClothingItemUi
 
 object OutfitGenerator {
 
-    fun generateOutfit(clothes: List<ClothingItem>): Outfit {
+    // ── Single best outfit ────────────────────────────────────────────────────
+    fun getBestOutfit(clothes: List<ClothingItemUi>): GeneratedOutfit? =
+        AiEngine.generateBestOutfit(clothes)
 
-        val tops = clothes.filter {
-            it.category.lowercase().contains("shirt") ||
-                    it.category.lowercase().contains("hoodie") ||
-                    it.category.lowercase().contains("top")
-        }
+    // ── Multiple suggestions ──────────────────────────────────────────────────
+    fun getSuggestions(
+        clothes: List<ClothingItemUi>,
+        count: Int = 3
+    ): List<GeneratedOutfit> =
+        AiEngine.generateOutfitSuggestions(clothes, count)
 
-        val bottoms = clothes.filter {
-            it.category.lowercase().contains("pants") ||
-                    it.category.lowercase().contains("jeans")
-        }
+    // ── Season-aware best outfit ──────────────────────────────────────────────
+    fun getBestOutfitForSeason(
+        clothes: List<ClothingItemUi>,
+        season: Season
+    ): GeneratedOutfit? =
+        AiEngine.generateBestOutfit(clothes, season)
 
-        val randomTop = if (tops.isNotEmpty()) tops.random() else null
-        val randomBottom = if (bottoms.isNotEmpty()) bottoms.random() else null
+    // ── Season-aware suggestions ──────────────────────────────────────────────
+    fun getSuggestionsForSeason(
+        clothes: List<ClothingItemUi>,
+        season: Season,
+        count: Int = 3
+    ): List<GeneratedOutfit> =
+        AiEngine.generateOutfitSuggestions(clothes, count, season)
 
-        return Outfit(randomTop, randomBottom)
-    }
+    // ── Current season ────────────────────────────────────────────────────────
+    fun currentSeason(): Season = SeasonEngine.currentSeason()
+
+    // ── Ad for wardrobe ───────────────────────────────────────────────────────
+    fun getAd(clothes: List<ClothingItemUi>): AdResult =
+        AdEngine.generateAd(clothes)
+
+    // ── Human-readable outfit description ────────────────────────────────────
+    fun describe(outfit: GeneratedOutfit): String =
+        AiEngine.describeOutfit(outfit)
 }

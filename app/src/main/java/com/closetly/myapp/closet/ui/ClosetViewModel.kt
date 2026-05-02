@@ -76,7 +76,9 @@ class ClosetViewModel : ViewModel() {
         color: String,
         brand: String,
         size: String,
-        purchaseLink: String
+        purchaseLink: String,
+        style: String = "",
+        tags: List<String> = emptyList()
     ) {
         _isBusy.value = true
         _message.value = "Removing background..."
@@ -96,6 +98,8 @@ class ClosetViewModel : ViewModel() {
                 brand = brand,
                 size = size,
                 purchaseLink = purchaseLink,
+                style = style,
+                tags = tags,
                 onSuccess = { newItem ->
                     _clothes.value = listOf(newItem) + _clothes.value
                     _isBusy.value = false
@@ -133,7 +137,9 @@ class ClosetViewModel : ViewModel() {
         color: String,
         brand: String,
         size: String,
-        purchaseLink: String
+        purchaseLink: String,
+        style: String = "",
+        tags: List<String> = emptyList()
     ) {
         _isBusy.value = true
         _message.value = ""
@@ -145,6 +151,8 @@ class ClosetViewModel : ViewModel() {
             brand = brand,
             size = size,
             purchaseLink = purchaseLink,
+            style = style,
+            tags = tags,
             onSuccess = { updatedItem ->
                 _clothes.value = _clothes.value.map {
                     if (it.id == itemId) updatedItem else it
@@ -159,21 +167,10 @@ class ClosetViewModel : ViewModel() {
         )
     }
 
-    fun setSelectedCategory(category: String?) {
-        _selectedCategory.value = category
-    }
-
-    fun setSelectedColor(color: String?) {
-        _selectedColor.value = color
-    }
-
-    fun setSelectedBrand(brand: String?) {
-        _selectedBrand.value = brand
-    }
-
-    fun setSelectedSize(size: String?) {
-        _selectedSize.value = size
-    }
+    fun setSelectedCategory(category: String?) { _selectedCategory.value = category }
+    fun setSelectedColor(color: String?) { _selectedColor.value = color }
+    fun setSelectedBrand(brand: String?) { _selectedBrand.value = brand }
+    fun setSelectedSize(size: String?) { _selectedSize.value = size }
 
     fun clearFilters() {
         _selectedCategory.value = null
