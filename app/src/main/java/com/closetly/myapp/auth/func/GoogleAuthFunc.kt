@@ -19,7 +19,7 @@ class GoogleAuthFunc(
     suspend fun signIn(context: Context) {
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(context.getString(R.string.default_web_client_id))
+            .setServerClientId(context.getString(R.string.google_web_client_id))
             .build()
 
         val request = GetCredentialRequest.Builder()
@@ -35,11 +35,10 @@ class GoogleAuthFunc(
             throw exception
         }
 
-        if (credential !is CustomCredential ||
-            credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-        ) {
-            throw IllegalStateException("Credential is not a Google ID token.")
-        }
+        check(
+            credential is CustomCredential &&
+                credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+        ) { "Credential is not a Google ID token." }
 
         try {
             val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
@@ -49,11 +48,13 @@ class GoogleAuthFunc(
             )
             auth.signInWithCredential(firebaseCredential).await()
             Log.d(TAG, "signInWithGoogle:success")
-        } catch (exception: GoogleIdTokenParsingException) {
-            Log.w(TAG, "signInWithGoogle:invalidToken", exception)
-            throw exception
         } catch (exception: Exception) {
-            Log.w(TAG, "signInWithGoogle:firebaseFailure", exception)
+            val message = if (exception is GoogleIdTokenParsingException) {
+                "signInWithGoogle:invalidToken"
+            } else {
+                "signInWithGoogle:firebaseFailure"
+            }
+            Log.w(TAG, message, exception)
             throw exception
         }
     }

@@ -30,6 +30,11 @@ android {
         val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
         buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
 
+        val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
+            .orElse(providers.environmentVariable("GOOGLE_WEB_CLIENT_ID"))
+            .getOrElse("348676947644-d9vd90dcp88jddraqe8gqs3ps1a55m7o.apps.googleusercontent.com")
+        resValue("string", "google_web_client_id", googleWebClientId)
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
