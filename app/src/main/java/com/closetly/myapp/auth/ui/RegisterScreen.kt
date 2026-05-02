@@ -40,14 +40,14 @@ fun RegisterScreen(
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordconfirm by remember { mutableStateOf("") }
+    var passwordConfirm by remember { mutableStateOf("") }
     val isPreview = LocalInspectionMode.current
     val registerFunc = if (!isPreview) remember { RegisterFunc() } else null
     val googleAuthFunc = if (!isPreview) remember { GoogleAuthFunc() } else null
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var passwordVisible by remember { mutableStateOf(false) }
-    var passwordconfirmVisible by remember { mutableStateOf(false) }
+    var passwordConfirmVisible by remember { mutableStateOf(false) }
     var isGoogleLoading by remember { mutableStateOf(false) }
 
     AuthScreenShell(
@@ -93,14 +93,14 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
-            value = passwordconfirm,
-            onValueChange = { passwordconfirm = it },
+            value = passwordConfirm,
+            onValueChange = { passwordConfirm = it },
             label = { Text("Passwort bestätigen") },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
-            visualTransformation = if (passwordconfirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (passwordConfirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                TextButton(onClick = { passwordconfirmVisible = !passwordconfirmVisible }) {
-                    Text(if (passwordconfirmVisible) "Ausblenden" else "Anzeigen")
+                TextButton(onClick = { passwordConfirmVisible = !passwordConfirmVisible }) {
+                    Text(if (passwordConfirmVisible) "Ausblenden" else "Anzeigen")
                 }
             },
             singleLine = true,
@@ -109,8 +109,8 @@ fun RegisterScreen(
 
         Button(
             onClick = {
-                if (password.trim() == passwordconfirm.trim()) {
-                    if (!isEmailVal(email)) {
+                if (password.trim() == passwordConfirm.trim()) {
+                    if (!isValidEmail(email)) {
                         Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
                         return@Button
                     }

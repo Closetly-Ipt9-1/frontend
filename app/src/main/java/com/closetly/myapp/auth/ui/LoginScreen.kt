@@ -99,7 +99,7 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                if (!isEmailVal(email)) {
+                if (!isValidEmail(email)) {
                     Toast.makeText(context, "Invalid email", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
@@ -290,7 +290,7 @@ private fun RowLogo() {
     }
 }
 
-fun isEmailVal(email: String): Boolean {
+fun isValidEmail(email: String): Boolean {
     val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
     return email.matches(emailRegex)
 }
