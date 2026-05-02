@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +50,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.closetly.myapp.auth.func.GoogleAuthFunc
 import com.closetly.myapp.auth.func.LoginFunc
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -60,8 +63,11 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     val isPreview = LocalInspectionMode.current
     val loginFunc = if (!isPreview) remember { LoginFunc() } else null
+    val googleAuthFunc = if (!isPreview) remember { GoogleAuthFunc() } else null
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var passwordVisible by remember { mutableStateOf(false) }
+    var isGoogleLoading by remember { mutableStateOf(false) }
 
     AuthScreenShell(
         title = "Willkommen zurück",
@@ -117,6 +123,30 @@ fun LoginScreen(
             Text("Einloggen")
         }
 
+        GoogleSignInButton(
+            text = "Mit Google einloggen",
+            isLoading = isGoogleLoading,
+            onClick = {
+                val authFunc = googleAuthFunc ?: return@GoogleSignInButton
+                isGoogleLoading = true
+                coroutineScope.launch {
+                    runCatching { authFunc.signIn(context) }
+                        .onSuccess {
+                            Toast.makeText(context, "Google login successful", Toast.LENGTH_SHORT).show()
+                            onLoginSuccess()
+                        }
+                        .onFailure {
+                            Toast.makeText(
+                                context,
+                                googleAuthFailureMessage("Google login failed", it),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    isGoogleLoading = false
+                }
+            }
+        )
+
         OutlinedButton(
             onClick = {
                 loginFunc?.login(
@@ -140,6 +170,34 @@ fun LoginScreen(
             Text("Account erstellen")
         }
     }
+}
+
+@Composable
+fun GoogleSignInButton(
+    text: String,
+    isLoading: Boolean,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = !isLoading,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+    ) {
+        Text(
+            text = "G",
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF4285F4)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(if (isLoading) "Google wird geoeffnet..." else text)
+    }
+}
+
+fun googleAuthFailureMessage(prefix: String, error: Throwable): String {
+    val reason = error.localizedMessage ?: error::class.simpleName ?: "Unknown error"
+    return "$prefix: $reason"
 }
 
 @Composable

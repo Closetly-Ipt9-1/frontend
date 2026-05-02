@@ -150,6 +150,12 @@ fun ClosetlyApp() {
                             popUpTo(Routes.REGISTER) { inclusive = true }
                             launchSingleTop = true
                         }
+                    },
+                    onGoogleSignInSuccess = {
+                        navController.navigate(Routes.EXPLORE) {
+                            popUpTo(Routes.REGISTER) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
                 )
             }

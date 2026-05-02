@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,12 +26,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.closetly.myapp.auth.func.GoogleAuthFunc
 import com.closetly.myapp.auth.func.RegisterFunc
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: () -> Unit,
+    onGoogleSignInSuccess: () -> Unit = onRegisterSuccess,
 ) {
     var name by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -39,9 +43,12 @@ fun RegisterScreen(
     var passwordconfirm by remember { mutableStateOf("") }
     val isPreview = LocalInspectionMode.current
     val registerFunc = if (!isPreview) remember { RegisterFunc() } else null
+    val googleAuthFunc = if (!isPreview) remember { GoogleAuthFunc() } else null
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var passwordVisible by remember { mutableStateOf(false) }
     var passwordconfirmVisible by remember { mutableStateOf(false) }
+    var isGoogleLoading by remember { mutableStateOf(false) }
 
     AuthScreenShell(
         title = "Account erstellen",
@@ -131,6 +138,30 @@ fun RegisterScreen(
         ) {
             Text("Registrieren")
         }
+
+        GoogleSignInButton(
+            text = "Mit Google registrieren",
+            isLoading = isGoogleLoading,
+            onClick = {
+                val authFunc = googleAuthFunc ?: return@GoogleSignInButton
+                isGoogleLoading = true
+                coroutineScope.launch {
+                    runCatching { authFunc.signIn(context) }
+                        .onSuccess {
+                            Toast.makeText(context, "Google registration successful", Toast.LENGTH_SHORT).show()
+                            onGoogleSignInSuccess()
+                        }
+                        .onFailure {
+                            Toast.makeText(
+                                context,
+                                googleAuthFailureMessage("Google registration failed", it),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    isGoogleLoading = false
+                }
+            }
+        )
 
         TextButton(onClick = onNavigateToLogin) {
             Text("Schon registriert? Einloggen")
