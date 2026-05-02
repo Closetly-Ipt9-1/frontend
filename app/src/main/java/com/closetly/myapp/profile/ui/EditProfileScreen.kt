@@ -58,7 +58,7 @@ fun EditProfileScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Profil editieren",
+            text = "Edit profile",
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -201,7 +201,7 @@ fun EditProfileScreen(
             enabled = !isSaving
         ) 
         {
-            Text("Speichern")
+            Text("Save")
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -214,7 +214,7 @@ fun EditProfileScreen(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back"
             )
-            Text(" Zurück")
+            Text(" Back")
         }
     }
 }

@@ -51,8 +51,8 @@ fun RegisterScreen(
     var isGoogleLoading by remember { mutableStateOf(false) }
 
     AuthScreenShell(
-        title = "Account erstellen",
-        subtitle = "Starte deinen digitalen Kleiderschrank."
+        title = "Create account",
+        subtitle = "Start your digital closet."
     ) {
         OutlinedTextField(
             value = name,
@@ -81,12 +81,12 @@ fun RegisterScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Passwort") },
+            label = { Text("Password") },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Text(if (passwordVisible) "Ausblenden" else "Anzeigen")
+                    Text(if (passwordVisible) "Hide" else "Show")
                 }
             },
             singleLine = true,
@@ -95,12 +95,12 @@ fun RegisterScreen(
         OutlinedTextField(
             value = passwordConfirm,
             onValueChange = { passwordConfirm = it },
-            label = { Text("Passwort bestätigen") },
+            label = { Text("Confirm password") },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             visualTransformation = if (passwordConfirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 TextButton(onClick = { passwordConfirmVisible = !passwordConfirmVisible }) {
-                    Text(if (passwordConfirmVisible) "Ausblenden" else "Anzeigen")
+                    Text(if (passwordConfirmVisible) "Hide" else "Show")
                 }
             },
             singleLine = true,
@@ -136,11 +136,11 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Registrieren")
+            Text("Sign up")
         }
 
         GoogleSignInButton(
-            text = "Mit Google registrieren",
+            text = "Sign up with Google",
             isLoading = isGoogleLoading,
             onClick = {
                 val authFunc = googleAuthFunc ?: return@GoogleSignInButton
@@ -164,7 +164,7 @@ fun RegisterScreen(
         )
 
         TextButton(onClick = onNavigateToLogin) {
-            Text("Schon registriert? Einloggen")
+            Text("Already registered? Log in")
         }
     }
 }

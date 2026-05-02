@@ -113,7 +113,7 @@ fun PremiumScreen(onBack: () -> Unit = {}, viewModel: PremiumViewModel = viewMod
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Zurück",
+                contentDescription = "Back",
                 tint = Color.White
             )
         }

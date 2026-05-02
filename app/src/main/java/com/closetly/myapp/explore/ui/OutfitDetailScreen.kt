@@ -99,7 +99,7 @@ fun OutfitDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Zurück"
+                            contentDescription = "Back"
                         )
                     }
                 }
@@ -150,7 +150,7 @@ fun OutfitDetailScreen(
 
                 item {
                     Text(
-                        text = "Kleidungsstücke",
+                        text = "Clothing items",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -159,7 +159,7 @@ fun OutfitDetailScreen(
                 if (clothingItems.isEmpty()) {
                     item {
                         Text(
-                            text = "Keine Kleidungsstücke in diesem Outfit.",
+                            text = "No clothing items in this outfit.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -244,13 +244,13 @@ private fun ClothingItemDetailCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Im Shop kaufen",
+                            text = "Buy in shop",
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
                 } else {
                     Text(
-                        text = "Kein Kauflink hinterlegt",
+                        text = "No purchase link saved",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -231,7 +231,7 @@ fun ExploreScreen(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Text(
-                        text = errorText ?: "Etwas ist schiefgelaufen",
+                        text = errorText ?: "Something went wrong",
                         modifier = Modifier.padding(18.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -252,7 +252,7 @@ fun ExploreScreen(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     Text(
-                        text = "Noch keine öffentlichen Outfits",
+                        text = "No public outfits yet",
                         modifier = Modifier.padding(18.dp),
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -290,7 +290,7 @@ fun ExploreScreen(
                 if (displayedOutfits.isEmpty()) {
                     item {
                         Text(
-                            text = "Keine Outfits für die ausgewählten Tags.",
+                            text = "No outfits for the selected tags.",
                             modifier = Modifier.padding(vertical = 16.dp),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -462,13 +462,13 @@ private fun NativeAdPlaceholder(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Anzeige",
+                text = "Ad",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Gesponserter Platz",
+                text = "Sponsored slot",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -500,7 +500,7 @@ private fun createNativeAdView(context: Context): NativeAdView {
     }
 
     val badge = TextView(context).apply {
-        text = "Anzeige"
+        text = "Ad"
         textSize = 12f
         setTextColor(0xFF6F6F6F.toInt())
     }
@@ -640,7 +640,7 @@ private fun ExploreHeader(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Community-Looks entdecken und nach Stimmung filtern.",
+                    text = "Discover community looks and filter by mood.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -685,9 +685,9 @@ private fun ExploreHeader(
                         )
                         Text(
                             text = if (selectedTagIds.isEmpty()) {
-                                "Alle Looks anzeigen"
+                                "Show all looks"
                             } else {
-                                "${selectedTagIds.size} Filter aktiv"
+                                "${selectedTagIds.size} active filters"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -699,31 +699,31 @@ private fun ExploreHeader(
                         } else {
                             Icons.Default.KeyboardArrowDown
                         },
-                        contentDescription = if (filterExpanded) "Filter schließen" else "Filter öffnen",
+                        contentDescription = if (filterExpanded) "Close filters" else "Open filters",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
 
                 if (filterExpanded) {
                     ExploreFilterChip(
-                        label = "Alle",
+                        label = "All",
                         selected = selectedTagIds.isEmpty(),
                         onClick = onClearTags
                     )
                     ExploreTagRow(
-                        label = "Saison",
+                        label = "Season",
                         tags = PredefinedTags.SEASON,
                         selectedTagIds = selectedTagIds,
                         onTagToggle = onTagToggle
                     )
                     ExploreTagRow(
-                        label = "Anlass",
+                        label = "Occasion",
                         tags = PredefinedTags.OCCASION,
                         selectedTagIds = selectedTagIds,
                         onTagToggle = onTagToggle
                     )
                     ExploreTagRow(
-                        label = "Stil",
+                        label = "Style",
                         tags = PredefinedTags.STYLE,
                         selectedTagIds = selectedTagIds,
                         onTagToggle = onTagToggle
@@ -868,7 +868,7 @@ fun ExploreOutfitCard(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = if (outfit.isPublic) "Öffentlicher Look" else "Privater Look",
+                        text = if (outfit.isPublic) "Public look" else "Private look",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -923,7 +923,7 @@ fun ExploreOutfitCard(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Look Vorschau",
+                            text = "Look preview",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -937,7 +937,7 @@ fun ExploreOutfitCard(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = outfit.caption.ifBlank { "Ohne Beschreibung" },
+                    text = outfit.caption.ifBlank { "No description" },
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (outfit.caption.isBlank()) {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -1039,7 +1039,7 @@ fun ExploreOutfitCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (comments.isEmpty()) "Kommentare" else "${comments.size} Kommentar${if (comments.size != 1) "e" else ""}",
+                    text = if (comments.isEmpty()) "Comments" else "${comments.size} Comment${if (comments.size != 1) "s" else ""}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -1053,7 +1053,7 @@ fun ExploreOutfitCard(
                 ) {
                     if (comments.isEmpty()) {
                         Text(
-                            text = "Noch keine Kommentare. Sei der Erste!",
+                            text = "No comments yet. Be the first!",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)
@@ -1073,7 +1073,7 @@ fun ExploreOutfitCard(
                         }
                         if (comments.size > 5) {
                             Text(
-                                text = if (showAllComments) "Weniger anzeigen" else "Weitere ${comments.size - 5} Kommentare anzeigen",
+                                text = if (showAllComments) "Show less" else "Show ${comments.size - 5} more comments",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
@@ -1139,7 +1139,7 @@ private fun CommentInputBar(
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (value.isBlank()) {
                             Text(
-                                text = "Kommentar schreiben",
+                                text = "Write a comment",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1166,7 +1166,7 @@ private fun CommentInputBar(
                 IconButton(onClick = onSend) {
                     Icon(
                         imageVector = Icons.Default.Send,
-                        contentDescription = "Senden",
+                        contentDescription = "Send",
                         modifier = Modifier.size(19.dp)
                     )
                 }
@@ -1216,7 +1216,7 @@ private fun CommentItem(
             ) {
                 Icon(
                     imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Like Kommentar",
+                    contentDescription = "Like Comment",
                     modifier = Modifier.size(16.dp),
                     tint = if (isLiked) {
                         MaterialTheme.colorScheme.primary

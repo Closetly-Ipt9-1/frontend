@@ -3,9 +3,9 @@ package com.closetly.myapp.tags.model
 object PredefinedTags {
 
     val SEASON: List<Tag> = listOf(
-        Tag(id = "season_spring", name = "Frühling"),
-        Tag(id = "season_summer", name = "Sommer"),
-        Tag(id = "season_autumn", name = "Herbst"),
+        Tag(id = "season_spring", name = "Spring"),
+        Tag(id = "season_summer", name = "Summer"),
+        Tag(id = "season_autumn", name = "Autumn"),
         Tag(id = "season_winter", name = "Winter")
     )
 
@@ -14,7 +14,7 @@ object PredefinedTags {
         Tag(id = "occasion_formal", name = "Formal"),
         Tag(id = "occasion_sport", name = "Sport"),
         Tag(id = "occasion_party", name = "Party"),
-        Tag(id = "occasion_work", name = "Arbeit")
+        Tag(id = "occasion_work", name = "Work")
     )
 
     val STYLE: List<Tag> = listOf(
