@@ -35,3 +35,16 @@ app/google-services.json
 
 node_modules/
 functions/node_modules/
+
+# Build artifacts
+app/build/
+build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+
+# APK files
+*.apk
+*.aab
