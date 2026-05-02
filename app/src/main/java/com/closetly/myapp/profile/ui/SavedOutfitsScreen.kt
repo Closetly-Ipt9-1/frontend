@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -55,7 +56,7 @@ data class SavedOutfit(
 )
 
 @Composable
-fun SavedOutfitsScreen() {
+fun SavedOutfitsScreen(onBack: () -> Unit = {}) {
     val firestore = remember { FirebaseFirestore.getInstance() }
     val currentUserId = AuthManager.getCurrentUserId()
 
@@ -168,8 +169,15 @@ fun SavedOutfitsScreen() {
             ) {
                 item {
                     Column(
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
                     ) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Zurück"
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Saved Outfits",
                             style = MaterialTheme.typography.headlineLarge
