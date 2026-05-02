@@ -26,14 +26,9 @@ class GoogleAuthFunc(
             .addCredentialOption(googleIdOption)
             .build()
 
-        val credential = try {
-            CredentialManager.create(context)
-                .getCredential(context = context, request = request)
-                .credential
-        } catch (exception: Exception) {
-            Log.w(TAG, "signInWithGoogle:getCredentialFailure", exception)
-            throw exception
-        }
+        val credential = CredentialManager.create(context)
+            .getCredential(context = context, request = request)
+            .credential
 
         check(
             credential is CustomCredential &&
