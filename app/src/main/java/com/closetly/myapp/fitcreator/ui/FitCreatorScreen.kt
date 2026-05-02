@@ -78,7 +78,7 @@ fun FitCreatorScreen() {
             contentColor = MaterialTheme.colorScheme.primary
         ) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Erstellen") })
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Tagesoutfit") })
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Generator") })
             Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Vorschläge") })
             Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Meine Outfits") })
         }
@@ -125,13 +125,14 @@ private fun DailyOutfitTab(
                 )
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // Header in DailyOutfitTab — ersetze den Card-Inhalt:
                     Text(
-                        text = "Outfit des Tages",
+                        text = "Outfit Generator",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${season.displayName()} • ${SeasonEngine.seasonTip(season)}",
+                        text = "${season.displayName()} · ${SeasonEngine.seasonTip(season)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -160,7 +161,7 @@ private fun DailyOutfitTab(
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Anderes Outfit generieren")
+                    Text("Neues Outfit generieren")
                 }
             }
         } else {

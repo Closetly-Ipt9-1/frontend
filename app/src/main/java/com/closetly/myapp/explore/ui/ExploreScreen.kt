@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -55,23 +58,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.auth.func.AuthManager
+import com.closetly.myapp.closet.data.ClosetRepository
 import com.closetly.myapp.tags.model.PredefinedTags
 import com.closetly.myapp.tags.model.Tag
 import androidx.compose.foundation.lazy.LazyRow
@@ -84,6 +89,12 @@ import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.google.android.gms.ads.nativead.NativeAdView
+import com.m306.closetly.ai.AiEngine
+import com.m306.closetly.ai.DailyOutfitManager
+import com.m306.closetly.ai.DailyOutfitResult
+import com.m306.closetly.ai.GeneratedOutfit
+import com.m306.closetly.ai.SeasonEngine
+import kotlinx.coroutines.launch
 
 private const val DEBUG_NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
 private const val RELEASE_NATIVE_AD_UNIT_ID = "ca-app-pub-4262797000632373/3282738680"
@@ -125,6 +136,29 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
     val currentUsername = AuthManager.getCurrentUser()?.displayName ?: "Anonymous"
     val nativeAdUnitId = if (BuildConfig.DEBUG) DEBUG_NATIVE_AD_UNIT_ID else RELEASE_NATIVE_AD_UNIT_ID
 
+    // ── AI: Daily Outfit ──────────────────────────────────────────────────────
+    val closetRepository = remember { ClosetRepository() }
+    val dailyOutfitManager = remember { DailyOutfitManager() }
+    var dailyOutfit by remember { mutableStateOf<GeneratedOutfit?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        closetRepository.getClothingItems(
+            onSuccess = { items ->
+                scope.launch {
+                    val result = dailyOutfitManager.generateTodayOutfit(items)
+                    dailyOutfit = when (result) {
+                        is DailyOutfitResult.Generated     -> result.outfit
+                        is DailyOutfitResult.AlreadyExists -> result.outfit
+                        is DailyOutfitResult.Error         -> null
+                    }
+                }
+            },
+            onError = {}
+        )
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     var outfits by remember { mutableStateOf<List<ExploreOutfit>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
@@ -141,9 +175,7 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
             adUnitId = nativeAdUnitId,
             targetCount = PRELOADED_NATIVE_AD_COUNT,
             currentCount = { preloadedNativeAds.size },
-            onLoaded = { loadedAd ->
-                preloadedNativeAds.add(loadedAd)
-            }
+            onLoaded = { loadedAd -> preloadedNativeAds.add(loadedAd) }
         )
     }
 
@@ -164,7 +196,6 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                     isLoading = false
                     return@addSnapshotListener
                 }
-
                 val loadedOutfits = snapshot
                     ?.documents
                     ?.mapNotNull { document ->
@@ -185,15 +216,11 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                     }
                     ?.sortedByDescending { it.createdAt }
                     .orEmpty()
-
                 outfits = loadedOutfits
                 isLoading = false
                 errorText = null
             }
-
-        onDispose {
-            listener.remove()
-        }
+        onDispose { listener.remove() }
     }
 
     when {
@@ -204,9 +231,7 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                     .background(MaterialTheme.colorScheme.background)
                     .statusBarsPadding(),
                 contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            ) { CircularProgressIndicator() }
         }
 
         errorText != null -> {
@@ -217,15 +242,8 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Text(
-                        text = errorText ?: "Etwas ist schiefgelaufen",
-                        modifier = Modifier.padding(18.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
+                    Text(text = errorText ?: "Etwas ist schiefgelaufen", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -238,15 +256,8 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Text(
-                        text = "Noch keine öffentlichen Outfits",
-                        modifier = Modifier.padding(18.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
+                    Text(text = "Noch keine öffentlichen Outfits", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -269,14 +280,18 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                         selectedTagIds = filterTagIds,
                         onClearTags = { filterTagIds = emptyList() },
                         onTagToggle = { tagId ->
-                            filterTagIds = if (tagId in filterTagIds) {
-                                filterTagIds - tagId
-                            } else {
-                                filterTagIds + tagId
-                            }
+                            filterTagIds = if (tagId in filterTagIds) filterTagIds - tagId else filterTagIds + tagId
                         }
                     )
                 }
+
+                // ── OOTD Card ─────────────────────────────────────────────────
+                dailyOutfit?.let { outfit ->
+                    item(key = "ootd") {
+                        OotdCard(outfit = outfit)
+                    }
+                }
+                // ─────────────────────────────────────────────────────────────
 
                 if (displayedOutfits.isEmpty()) {
                     item {
@@ -297,22 +312,10 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                         firestore = firestore,
                         onCardClick = { onOutfitClick(outfit.id) },
                         onLikeClick = {
-                            if (currentUserId != null) {
-                                toggleLike(
-                                    firestore = firestore,
-                                    outfitId = outfit.id,
-                                    userId = currentUserId
-                                )
-                            }
+                            if (currentUserId != null) toggleLike(firestore, outfit.id, currentUserId)
                         },
                         onSaveClick = {
-                            if (currentUserId != null) {
-                                toggleSave(
-                                    firestore = firestore,
-                                    outfitId = outfit.id,
-                                    userId = currentUserId
-                                )
-                            }
+                            if (currentUserId != null) toggleSave(firestore, outfit.id, currentUserId)
                         }
                     )
 
@@ -326,17 +329,110 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                     }
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+                item { Spacer(modifier = Modifier.height(8.dp)) }
             }
         }
     }
 }
 
+// ── OOTD Card ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun OotdCard(outfit: GeneratedOutfit) {
+    val season = remember { SeasonEngine.currentSeason() }
+    val items = listOfNotNull(outfit.top, outfit.bottom, outfit.jacket, outfit.shoes)
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "OOTD",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "Outfit of the Day · ${season.displayName()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Text(
+                        text = "Score ${outfit.score}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = SeasonEngine.seasonTip(season),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            )
+
+            if (items.isNotEmpty()) {
+                val gridHeight = if (items.size > 2) 200.dp else 100.dp
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(gridHeight),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    userScrollEnabled = false
+                ) {
+                    items(items) { item ->
+                        AsyncImage(
+                            model = item.imageUrl,
+                            contentDescription = item.category,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(90.dp)
+                                .clip(MaterialTheme.shapes.large)
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = AiEngine.describeOutfit(outfit),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 private fun shouldShowAdAfterOutfit(index: Int): Boolean =
     (index + 1) >= OUTFITS_BEFORE_FIRST_AD &&
-        ((index + 1) - OUTFITS_BEFORE_FIRST_AD) % OUTFITS_BETWEEN_ADS == 0
+            ((index + 1) - OUTFITS_BEFORE_FIRST_AD) % OUTFITS_BETWEEN_ADS == 0
 
 private fun adSlotIndexAfterOutfit(index: Int): Int =
     ((index + 1) - OUTFITS_BEFORE_FIRST_AD) / OUTFITS_BETWEEN_ADS
@@ -357,16 +453,11 @@ private fun preloadNativeAds(
                 onLoaded(loadedAd)
                 Log.d(EXPLORE_AD_TAG, "Preloaded native ad")
             }
-            .withAdListener(
-                object : AdListener() {
-                    override fun onAdFailedToLoad(adError: LoadAdError) {
-                        Log.w(
-                            EXPLORE_AD_TAG,
-                            "Native preload failed: code=${adError.code}, domain=${adError.domain}, message=${adError.message}"
-                        )
-                    }
+            .withAdListener(object : AdListener() {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    Log.w(EXPLORE_AD_TAG, "Native preload failed: code=${adError.code}, domain=${adError.domain}, message=${adError.message}")
                 }
-            )
+            })
             .withNativeAdOptions(NativeAdOptions.Builder().build())
             .build()
             .loadAd(AdRequest.Builder().build())
@@ -390,17 +481,12 @@ private fun NativeAdCard(
                 adFailed = false
                 Log.d(EXPLORE_AD_TAG, "Native ad loaded")
             }
-            .withAdListener(
-                object : AdListener() {
-                    override fun onAdFailedToLoad(adError: LoadAdError) {
-                        adFailed = true
-                        Log.w(
-                            EXPLORE_AD_TAG,
-                            "Native ad failed to load: code=${adError.code}, domain=${adError.domain}, message=${adError.message}"
-                        )
-                    }
+            .withAdListener(object : AdListener() {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    adFailed = true
+                    Log.w(EXPLORE_AD_TAG, "Native ad failed to load: code=${adError.code}, domain=${adError.domain}, message=${adError.message}")
                 }
-            )
+            })
             .withNativeAdOptions(NativeAdOptions.Builder().build())
             .build()
     }
@@ -412,56 +498,33 @@ private fun NativeAdCard(
     }
 
     DisposableEffect(nativeAd) {
-        onDispose {
-            nativeAd?.destroy()
-        }
+        onDispose { nativeAd?.destroy() }
     }
 
     val loadedAd = preloadedAd ?: nativeAd
     if (loadedAd != null && !adFailed) {
         AndroidView(
-            modifier = modifier
-                .fillMaxWidth()
-                .heightIn(min = 300.dp),
+            modifier = modifier.fillMaxWidth().heightIn(min = 300.dp),
             factory = { createNativeAdView(it) },
-            update = { nativeAdView ->
-                populateNativeAdView(loadedAd, nativeAdView)
-            }
+            update = { nativeAdView -> populateNativeAdView(loadedAd, nativeAdView) }
         )
     } else {
-        NativeAdPlaceholder(
-            modifier = modifier
-        )
+        NativeAdPlaceholder(modifier = modifier)
     }
 }
 
 @Composable
-private fun NativeAdPlaceholder(
-    modifier: Modifier = Modifier
-) {
+private fun NativeAdPlaceholder(modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 180.dp),
+        modifier = modifier.fillMaxWidth().heightIn(min = 180.dp),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Anzeige",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
-            )
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "Anzeige", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Gesponserter Platz",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = "Gesponserter Platz", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -471,17 +534,11 @@ private fun createNativeAdView(context: Context): NativeAdView {
     fun Int.dpPx(): Int = (this * density).toInt()
 
     val nativeAdView = NativeAdView(context).apply {
-        layoutParams = FrameLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
+        layoutParams = FrameLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
     }
 
     val container = LinearLayout(context).apply {
-        layoutParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT
-        )
+        layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT)
         orientation = LinearLayout.VERTICAL
         setPadding(14.dpPx(), 14.dpPx(), 14.dpPx(), 14.dpPx())
         background = android.graphics.drawable.GradientDrawable().apply {
@@ -490,19 +547,10 @@ private fun createNativeAdView(context: Context): NativeAdView {
         }
     }
 
-    val badge = TextView(context).apply {
-        text = "Anzeige"
-        textSize = 12f
-        setTextColor(0xFF6F6F6F.toInt())
-    }
+    val badge = TextView(context).apply { text = "Anzeige"; textSize = 12f; setTextColor(0xFF6F6F6F.toInt()) }
 
     val mediaView = MediaView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            180.dpPx()
-        ).apply {
-            topMargin = 10.dpPx()
-        }
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 180.dpPx()).apply { topMargin = 10.dpPx() }
     }
 
     val titleRow = LinearLayout(context).apply {
@@ -512,9 +560,7 @@ private fun createNativeAdView(context: Context): NativeAdView {
     }
 
     val iconView = ImageView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(44.dpPx(), 44.dpPx()).apply {
-            rightMargin = 10.dpPx()
-        }
+        layoutParams = LinearLayout.LayoutParams(44.dpPx(), 44.dpPx()).apply { rightMargin = 10.dpPx() }
         scaleType = ImageView.ScaleType.CENTER_CROP
     }
 
@@ -529,10 +575,7 @@ private fun createNativeAdView(context: Context): NativeAdView {
         setTextColor(0xFF202124.toInt())
     }
 
-    val advertiserView = TextView(context).apply {
-        textSize = 13f
-        setTextColor(0xFF6F6F6F.toInt())
-    }
+    val advertiserView = TextView(context).apply { textSize = 13f; setTextColor(0xFF6F6F6F.toInt()) }
 
     val bodyView = TextView(context).apply {
         textSize = 14f
@@ -550,7 +593,6 @@ private fun createNativeAdView(context: Context): NativeAdView {
     textColumn.addView(advertiserView)
     titleRow.addView(iconView)
     titleRow.addView(textColumn)
-
     container.addView(badge)
     container.addView(mediaView)
     container.addView(titleRow)
@@ -568,26 +610,17 @@ private fun createNativeAdView(context: Context): NativeAdView {
     return nativeAdView
 }
 
-private fun populateNativeAdView(
-    nativeAd: NativeAd,
-    nativeAdView: NativeAdView
-) {
+private fun populateNativeAdView(nativeAd: NativeAd, nativeAdView: NativeAdView) {
     (nativeAdView.headlineView as TextView).text = nativeAd.headline
-
     nativeAdView.mediaView?.mediaContent = nativeAd.mediaContent
-
     nativeAdView.bodyView?.visibility = if (nativeAd.body == null) View.GONE else View.VISIBLE
     (nativeAdView.bodyView as TextView).text = nativeAd.body
-
     nativeAdView.callToActionView?.visibility = if (nativeAd.callToAction == null) View.GONE else View.VISIBLE
     (nativeAdView.callToActionView as Button).text = nativeAd.callToAction
-
     nativeAdView.iconView?.visibility = if (nativeAd.icon == null) View.GONE else View.VISIBLE
     (nativeAdView.iconView as ImageView).setImageDrawable(nativeAd.icon?.drawable)
-
     nativeAdView.advertiserView?.visibility = if (nativeAd.advertiser == null) View.GONE else View.VISIBLE
     (nativeAdView.advertiserView as TextView).text = nativeAd.advertiser
-
     nativeAdView.setNativeAd(nativeAd)
 }
 
@@ -605,59 +638,22 @@ private fun ExploreHeader(
             .fillMaxWidth()
             .padding(top = 12.dp, bottom = 4.dp)
             .clip(MaterialTheme.shapes.extraLarge)
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.surfaceVariant
-                    )
-                )
-            )
+            .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant)))
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Text(
-                    text = "Explore",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Community-Looks entdecken und nach Stimmung filtern.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(text = "Explore", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text(text = "Community-Looks entdecken und nach Stimmung filtern.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                contentColor = MaterialTheme.colorScheme.primary,
-                shape = MaterialTheme.shapes.large
-            ) {
-                Text(
-                    text = "$visibleCount Looks",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
-                )
+            Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f), contentColor = MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.large) {
+                Text(text = "$visibleCount Looks", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
             }
         }
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.background.copy(alpha = 0.34f)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+        Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.background.copy(alpha = 0.34f)) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -669,56 +665,25 @@ private fun ExploreHeader(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
+                        Text(text = "Filter", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(
-                            text = "Filter",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = if (selectedTagIds.isEmpty()) {
-                                "Alle Looks anzeigen"
-                            } else {
-                                "${selectedTagIds.size} Filter aktiv"
-                            },
+                            text = if (selectedTagIds.isEmpty()) "Alle Looks anzeigen" else "${selectedTagIds.size} Filter aktiv",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Icon(
-                        imageVector = if (filterExpanded) {
-                            Icons.Default.KeyboardArrowUp
-                        } else {
-                            Icons.Default.KeyboardArrowDown
-                        },
-                        contentDescription = if (filterExpanded) "Filter schließen" else "Filter öffnen",
+                        imageVector = if (filterExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
 
                 if (filterExpanded) {
-                    ExploreFilterChip(
-                        label = "Alle",
-                        selected = selectedTagIds.isEmpty(),
-                        onClick = onClearTags
-                    )
-                    ExploreTagRow(
-                        label = "Saison",
-                        tags = PredefinedTags.SEASON,
-                        selectedTagIds = selectedTagIds,
-                        onTagToggle = onTagToggle
-                    )
-                    ExploreTagRow(
-                        label = "Anlass",
-                        tags = PredefinedTags.OCCASION,
-                        selectedTagIds = selectedTagIds,
-                        onTagToggle = onTagToggle
-                    )
-                    ExploreTagRow(
-                        label = "Stil",
-                        tags = PredefinedTags.STYLE,
-                        selectedTagIds = selectedTagIds,
-                        onTagToggle = onTagToggle
-                    )
+                    ExploreFilterChip(label = "Alle", selected = selectedTagIds.isEmpty(), onClick = onClearTags)
+                    ExploreTagRow(label = "Saison", tags = PredefinedTags.SEASON, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+                    ExploreTagRow(label = "Anlass", tags = PredefinedTags.OCCASION, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+                    ExploreTagRow(label = "Stil", tags = PredefinedTags.STYLE, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
                 }
             }
         }
@@ -726,55 +691,26 @@ private fun ExploreHeader(
 }
 
 @Composable
-private fun ExploreTagRow(
-    label: String,
-    tags: List<Tag>,
-    selectedTagIds: List<String>,
-    onTagToggle: (String) -> Unit
-) {
+private fun ExploreTagRow(label: String, tags: List<Tag>, selectedTagIds: List<String>, onTagToggle: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(tags) { tag ->
-                ExploreFilterChip(
-                    label = tag.name,
-                    selected = tag.id in selectedTagIds,
-                    onClick = { onTagToggle(tag.id) }
-                )
+                ExploreFilterChip(label = tag.name, selected = tag.id in selectedTagIds, onClick = { onTagToggle(tag.id) })
             }
         }
     }
 }
 
 @Composable
-private fun ExploreFilterChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+private fun ExploreFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
-        color = if (selected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        },
-        contentColor = if (selected) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
+        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)
-        )
+        Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
     }
 }
 
@@ -826,55 +762,22 @@ fun ExploreOutfitCard(
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    modifier = Modifier.size(42.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                ) {
+                Surface(modifier = Modifier.size(42.dp), shape = CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "User",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(imageVector = Icons.Default.Person, contentDescription = "User", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
-
-                Column(
-                    modifier = Modifier
-                        .padding(start = 12.dp)
-                        .weight(1f)
-                ) {
-                    Text(
-                        text = outfit.username,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = if (outfit.isPublic) "Öffentlicher Look" else "Privater Look",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                    Text(text = outfit.username, style = MaterialTheme.typography.titleMedium)
+                    Text(text = if (outfit.isPublic) "Öffentlicher Look" else "Privater Look", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-
-                Surface(
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ) {
-                    Text(
-                        text = "Community",
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
+                Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
+                    Text(text = "Community", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                 }
             }
 
@@ -884,138 +787,49 @@ fun ExploreOutfitCard(
                     .height(330.dp)
                     .padding(horizontal = 14.dp)
                     .clip(MaterialTheme.shapes.large)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
+                    .background(Brush.radialGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.background)))
                     .clickable { onCardClick() },
                 contentAlignment = Alignment.Center
             ) {
                 if (outfit.imageUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = outfit.imageUrl,
-                        contentDescription = outfit.caption.ifBlank { "Outfit" },
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                    AsyncImage(model = outfit.imageUrl, contentDescription = outfit.caption.ifBlank { "Outfit" }, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 } else {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Outfit",
-                            modifier = Modifier.size(42.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(imageVector = Icons.Default.Lock, contentDescription = "Outfit", modifier = Modifier.size(42.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = "Look Vorschau",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(text = "Look Vorschau", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
                     text = outfit.caption.ifBlank { "Ohne Beschreibung" },
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (outfit.caption.isBlank()) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
+                    color = if (outfit.caption.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
-
                 HorizontalDivider()
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = MaterialTheme.shapes.large,
-                        color = if (isLiked) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 10.dp)
-                        ) {
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(shape = MaterialTheme.shapes.large, color = if (isLiked) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 10.dp)) {
                             IconButton(onClick = onLikeClick) {
-                                Icon(
-                                    imageVector = if (isLiked) {
-                                        Icons.Default.Favorite
-                                    } else {
-                                        Icons.Default.FavoriteBorder
-                                    },
-                                    contentDescription = "Like",
-                                    modifier = Modifier.size(24.dp),
-                                    tint = if (isLiked) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    }
-                                )
+                                Icon(imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder, contentDescription = "Like", modifier = Modifier.size(24.dp), tint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text(
-                                text = "${outfit.likeCount}",
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                            Text(text = "${outfit.likeCount}", style = MaterialTheme.typography.labelLarge)
                         }
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    Surface(
-                        shape = MaterialTheme.shapes.large,
-                        color = if (isSaved) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 10.dp)
-                        ) {
+                    Surface(shape = MaterialTheme.shapes.large, color = if (isSaved) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 10.dp)) {
                             IconButton(onClick = onSaveClick) {
-                                Icon(
-                                    imageVector = if (isSaved) {
-                                        Icons.Default.Check
-                                    } else {
-                                        Icons.Default.CheckCircle
-                                    },
-                                    contentDescription = "Save",
-                                    modifier = Modifier.size(24.dp),
-                                    tint = if (isSaved) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    }
-                                )
+                                Icon(imageVector = if (isSaved) Icons.Default.Check else Icons.Default.CheckCircle, contentDescription = "Save", modifier = Modifier.size(24.dp), tint = if (isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text(
-                                text = "${outfit.saveCount}",
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                            Text(text = "${outfit.saveCount}", style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -1023,12 +837,7 @@ fun ExploreOutfitCard(
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = if (comments.isEmpty()) "Kommentare" else "${comments.size} Kommentar${if (comments.size != 1) "e" else ""}",
                     style = MaterialTheme.typography.titleMedium,
@@ -1037,39 +846,22 @@ fun ExploreOutfitCard(
             }
 
             if (commentsExpanded) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 18.dp)
-                ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 18.dp)) {
                     if (comments.isEmpty()) {
-                        Text(
-                            text = "Noch keine Kommentare. Sei der Erste!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
+                        Text(text = "Noch keine Kommentare. Sei der Erste!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
                     } else {
                         val visibleComments = if (showAllComments) comments else comments.take(5)
                         visibleComments.forEach { comment ->
-                            CommentItem(
-                                comment = comment,
-                                currentUserId = currentUserId,
-                                onLikeClick = {
-                                    if (currentUserId != null) {
-                                        toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
-                                    }
-                                }
-                            )
+                            CommentItem(comment = comment, currentUserId = currentUserId, onLikeClick = {
+                                if (currentUserId != null) toggleCommentLike(firestore, outfit.id, comment.id, currentUserId)
+                            })
                         }
                         if (comments.size > 5) {
                             Text(
                                 text = if (showAllComments) "Weniger anzeigen" else "Weitere ${comments.size - 5} Kommentare anzeigen",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .padding(vertical = 4.dp)
-                                    .clickable { showAllComments = !showAllComments }
+                                modifier = Modifier.padding(vertical = 4.dp).clickable { showAllComments = !showAllComments }
                             )
                         }
                     }
@@ -1095,71 +887,28 @@ fun ExploreOutfitCard(
 }
 
 @Composable
-private fun CommentInputBar(
-    value: String,
-    onValueChange: (String) -> Unit,
-    onSend: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 54.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+private fun CommentInputBar(value: String, onValueChange: (String) -> Unit, onSend: () -> Unit) {
+    Surface(modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface) {
+        Row(modifier = Modifier.padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
-                textStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
-                ),
+                textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = MaterialTheme.typography.bodyMedium.fontSize, lineHeight = MaterialTheme.typography.bodyMedium.lineHeight),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { onSend() }),
                 maxLines = 3,
                 decorationBox = { innerTextField ->
                     Box(contentAlignment = Alignment.CenterStart) {
-                        if (value.isBlank()) {
-                            Text(
-                                text = "Kommentar schreiben",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        if (value.isBlank()) { Text(text = "Kommentar schreiben", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         innerTextField()
                     }
                 }
             )
-
-            Surface(
-                modifier = Modifier.size(42.dp),
-                shape = CircleShape,
-                color = if (value.isNotBlank()) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.background.copy(alpha = 0.42f)
-                },
-                contentColor = if (value.isNotBlank()) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            ) {
+            Surface(modifier = Modifier.size(42.dp), shape = CircleShape, color = if (value.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background.copy(alpha = 0.42f), contentColor = if (value.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant) {
                 IconButton(onClick = onSend) {
-                    Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = "Senden",
-                        modifier = Modifier.size(19.dp)
-                    )
+                    Icon(imageVector = Icons.Default.Send, contentDescription = "Senden", modifier = Modifier.size(19.dp))
                 }
             }
         }
@@ -1167,56 +916,18 @@ private fun CommentInputBar(
 }
 
 @Composable
-private fun CommentItem(
-    comment: OutfitComment,
-    currentUserId: String?,
-    onLikeClick: () -> Unit
-) {
+private fun CommentItem(comment: OutfitComment, currentUserId: String?, onLikeClick: () -> Unit) {
     val isLiked = currentUserId != null && comment.likedBy.contains(currentUserId)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.Top
-    ) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.Top) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = comment.username,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = comment.text,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = comment.username, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Text(text = comment.text, style = MaterialTheme.typography.bodyMedium)
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (comment.likeCount > 0) {
-                Text(
-                    text = "${comment.likeCount}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            IconButton(
-                onClick = onLikeClick,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Like Kommentar",
-                    modifier = Modifier.size(16.dp),
-                    tint = if (isLiked) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (comment.likeCount > 0) { Text(text = "${comment.likeCount}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            IconButton(onClick = onLikeClick, modifier = Modifier.size(32.dp)) {
+                Icon(imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder, contentDescription = "Like Kommentar", modifier = Modifier.size(16.dp), tint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
-
