@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.m306.closetly.app-mergeDebugResources-82:/values-ml/values-ml.xml",
+            "outputFile": "com.m306.closetly.app-mergeDebugResources-83:/values-ml/values-ml.xml",
             "map": [
                 {
                     "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\44b0d45a665ea84d678f82aa4f93db40\\transformed\\material3-release\\res\\values-ml\\values-ml.xml",
@@ -38,23 +38,6 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\368523a42d767e651c0582066e65b236\\transformed\\play-services-basement-18.5.0\\res\\values-ml\\values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "155",
-                        "endOffsets": "350"
-                    },
-                    "to": {
-                        "startLines": "59",
-                        "startColumns": "4",
-                        "startOffsets": "5919",
-                        "endColumns": "159",
-                        "endOffsets": "6074"
-                    }
-                },
-                {
                     "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\4b3b18e7546ed76f8f924d92a1d97d3a\\transformed\\core-1.17.0\\res\\values-ml\\values-ml.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
@@ -69,6 +52,23 @@
                         "startOffsets": "3646,3748,3851,3953,4057,4160,4261,21333",
                         "endColumns": "101,102,101,103,102,100,121,100",
                         "endOffsets": "3743,3846,3948,4052,4155,4256,4378,21429"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\c48c81d5ea9a07b213e5a8b7efbde897\\transformed\\play-services-basement-18.9.0\\res\\values-ml\\values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "218",
+                        "endColumns": "155",
+                        "endOffsets": "373"
+                    },
+                    "to": {
+                        "startLines": "59",
+                        "startColumns": "4",
+                        "startOffsets": "5919",
+                        "endColumns": "159",
+                        "endOffsets": "6074"
                     }
                 },
                 {
@@ -142,13 +142,13 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\1a21307bd157428884db7e25f21a1e8c\\transformed\\play-services-base-18.5.0\\res\\values-ml\\values.xml",
+                    "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\74ca1ce35770746052de5fb4f64ade74\\transformed\\play-services-base-18.9.0\\res\\values-ml\\values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
-                        "startOffsets": "193,308,483,618,735,895,1016,1117,1219,1397,1509,1679,1811,1956,2113,2173,2238",
+                        "startOffsets": "216,331,506,641,758,918,1039,1140,1242,1420,1532,1702,1834,1979,2136,2196,2261",
                         "endColumns": "114,174,134,116,159,120,100,101,177,111,169,131,144,156,59,64,87",
-                        "endOffsets": "307,482,617,734,894,1015,1116,1218,1396,1508,1678,1810,1955,2112,2172,2237,2325"
+                        "endOffsets": "330,505,640,757,917,1038,1139,1241,1419,1531,1701,1833,1978,2135,2195,2260,2348"
                     },
                     "to": {
                         "startLines": "51,52,53,54,55,56,57,58,60,61,62,63,64,65,66,67,68",

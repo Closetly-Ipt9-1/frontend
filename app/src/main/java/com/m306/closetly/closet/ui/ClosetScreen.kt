@@ -3,52 +3,52 @@ package com.m306.closetly.closet.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.m306.closetly.ai.AdEngine
+import com.m306.closetly.ai.DailyOutfitManager
 import com.m306.closetly.closet.func.Images
+import com.m306.closetly.data.ClothingItem
+import com.m306.closetly.data.ClothingRepository
 
 @Composable
 fun ClosetScreen() {
-    val images = Images()
-    var isBusy by remember { mutableStateOf(false) }
+    val repository = remember { ClothingRepository() }
+    val images = remember { Images() }
 
+    var clothes by remember { mutableStateOf<List<ClothingItem>>(emptyList()) }
+    var showAd by remember { mutableStateOf(false) }
+    var isBusy by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var uploadMessage by remember { mutableStateOf<String?>(null) }
 
-    val launcher = rememberLauncherForActivityResult(
+    val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
         uploadMessage = null
+    }
+
+    // Load clothes and generate daily outfit on first composition
+    LaunchedEffect(Unit) {
+        clothes = repository.getUserClothes()
+        if (clothes.isNotEmpty()) {
+            showAd = true
+        }
+        DailyOutfitManager().generateTodayOutfit()
     }
 
     Column(
@@ -58,95 +58,117 @@ fun ClosetScreen() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Closet", style = MaterialTheme.typography.headlineLarge)
-        Text("Your wardrobe items", style = MaterialTheme.typography.bodyLarge)
+        ClosetHeader()
 
         Spacer(modifier = Modifier.height(24.dp))
 
         if (selectedImageUri == null) {
-            Button(
-                onClick = {
-                    launcher.launch("image/*")
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.height(0.dp))
-                Text("Chose image")
-            }
+            ImagePickerButton(onClick = { imagePicker.launch("image/*") })
         } else {
-            Text(
-                text = "Preview",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Card(
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                AsyncImage(
-                    model = selectedImageUri,
-                    contentDescription = "Preview",
-                    modifier = Modifier
-                        .size(250.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                enabled = !isBusy,
-                onClick = {
+            ImagePreviewSection(
+                imageUri = selectedImageUri!!,
+                isBusy = isBusy,
+                onAccept = {
                     isBusy = true
-                    val uri = selectedImageUri
-                    if (uri != null) {
-                        images.uploadClothes(
-                            imageUri = uri,
-                            onSuccess = { url ->
-                                selectedImageUri = null
-                                isBusy = false
-
-                            },
-                            onError = { error ->
-                                uploadMessage = "Error: ${error.message}"
-                                isBusy = false
-
-                            }
-                        )
-                    }
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null
-                )
-                Text("Accept")
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                enabled = !isBusy,
-                onClick = {
-                    selectedImageUri = null
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = null
-                )
-                Text("Cancel")
-            }
+                    images.uploadClothes(
+                        imageUri = selectedImageUri!!,
+                        onSuccess = {
+                            selectedImageUri = null
+                            isBusy = false
+                        },
+                        onError = { error ->
+                            uploadMessage = "Error: ${error.message}"
+                            isBusy = false
+                        }
+                    )
+                },
+                onCancel = { selectedImageUri = null }
+            )
         }
 
-
-
+        uploadMessage?.let {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error)
+        }
     }
+
+    // Style tip popup
+    if (showAd) {
+        StyleTipDialog(
+            text = AdEngine.generateAd(clothes),
+            onDismiss = { showAd = false }
+        )
+    }
+}
+
+// --- Extracted Components ---
+
+@Composable
+private fun ClosetHeader() {
+    Text("Closet", style = MaterialTheme.typography.headlineLarge)
+    Text("Your wardrobe items", style = MaterialTheme.typography.bodyLarge)
+}
+
+@Composable
+private fun ImagePickerButton(onClick: () -> Unit) {
+    Button(onClick = onClick) {
+        Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Choose image")
+    }
+}
+
+@Composable
+private fun ImagePreviewSection(
+    imageUri: Uri,
+    isBusy: Boolean,
+    onAccept: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Text(text = "Preview", style = MaterialTheme.typography.titleMedium)
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    Card(shape = RoundedCornerShape(16.dp)) {
+        AsyncImage(
+            model = imageUri,
+            contentDescription = "Selected clothing preview",
+            modifier = Modifier
+                .size(250.dp)
+                .clip(RoundedCornerShape(16.dp)),
+            contentScale = ContentScale.Crop
+        )
+    }
+
+    Spacer(modifier = Modifier.height(20.dp))
+
+    Button(onClick = onAccept, enabled = !isBusy) {
+        Icon(imageVector = Icons.Filled.Check, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Accept")
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedButton(onClick = onCancel, enabled = !isBusy) {
+        Icon(imageVector = Icons.Filled.Close, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Cancel")
+    }
+}
+
+@Composable
+private fun StyleTipDialog(text: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Style Tip") },
+        text = { Text(text) },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
 }
 
 @Preview(showBackground = true)

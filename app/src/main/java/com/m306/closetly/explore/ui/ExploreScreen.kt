@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.m306.closetly.ai.AdEngine
 
 @Composable
 fun ExploreScreen() {
@@ -23,4 +24,5 @@ fun ExploreScreen() {
         Text("Explore", style = MaterialTheme.typography.headlineLarge)
         Text("Discover outfits & inspiration", style = MaterialTheme.typography.bodyLarge)
     }
+
 }

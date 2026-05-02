@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.m306.closetly.app-mergeDebugResources-82:/values-v21/values-v21.xml",
+            "outputFile": "com.m306.closetly.app-mergeDebugResources-83:/values-v21/values-v21.xml",
             "map": [
                 {
                     "source": "C:\\Users\\marse\\.gradle\\caches\\8.11.1\\transforms\\190fd3951df728cab13ac5dee2da9e6b\\transformed\\credentials-play-services-auth-1.2.0-rc01\\res\\values-v21\\values-v21.xml",
