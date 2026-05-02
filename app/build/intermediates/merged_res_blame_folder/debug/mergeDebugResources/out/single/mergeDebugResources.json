@@ -1,66 +1,66 @@
 [
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-xhdpi_ic_launcher.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-xhdpi/ic_launcher.webp"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-anydpi_ic_launcher_round.xml.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-anydpi/ic_launcher_round.xml"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "com.m306.closetly.app-main-86:/drawable/ic_launcher_foreground.xml"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-xxxhdpi/ic_launcher.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/xml_backup_rules.xml.flat",
-        "source": "com.m306.closetly.app-main-86:/xml/backup_rules.xml"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-anydpi_ic_launcher.xml.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-anydpi/ic_launcher.xml"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-mdpi_ic_launcher_round.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-mdpi/ic_launcher_round.webp"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-hdpi/ic_launcher.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-xxxhdpi/ic_launcher_round.webp"
+        "merged": "com.m306.closetly.app-debug-85:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.m306.closetly.app-main-87:/drawable/ic_launcher_background.xml"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-hdpi_ic_launcher.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-hdpi/ic_launcher.webp"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-mdpi/ic_launcher_round.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-mdpi_ic_launcher.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-mdpi/ic_launcher.webp"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-xhdpi/ic_launcher.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/xml_data_extraction_rules.xml.flat",
-        "source": "com.m306.closetly.app-main-86:/xml/data_extraction_rules.xml"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-hdpi/ic_launcher_round.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-hdpi_ic_launcher_round.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-hdpi/ic_launcher_round.webp"
+        "merged": "com.m306.closetly.app-debug-85:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.m306.closetly.app-main-87:/drawable/ic_launcher_foreground.xml"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/drawable_ic_launcher_background.xml.flat",
-        "source": "com.m306.closetly.app-main-86:/drawable/ic_launcher_background.xml"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-xxhdpi/ic_launcher_round.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-xxhdpi_ic_launcher.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-xxhdpi/ic_launcher.webp"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-mdpi/ic_launcher.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-xxhdpi/ic_launcher_round.webp"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-xxhdpi/ic_launcher.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-xhdpi_ic_launcher_round.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-xhdpi/ic_launcher_round.webp"
+        "merged": "com.m306.closetly.app-debug-85:/xml_backup_rules.xml.flat",
+        "source": "com.m306.closetly.app-main-87:/xml/backup_rules.xml"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-anydpi_ic_launcher.xml.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-anydpi/ic_launcher.xml"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-xhdpi/ic_launcher_round.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-xxxhdpi_ic_launcher.webp.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-xxxhdpi/ic_launcher.webp"
+        "merged": "com.m306.closetly.app-debug-85:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.m306.closetly.app-main-87:/mipmap-xxxhdpi/ic_launcher_round.webp"
     },
     {
-        "merged": "com.m306.closetly.app-debug-84:/mipmap-anydpi_ic_launcher_round.xml.flat",
-        "source": "com.m306.closetly.app-main-86:/mipmap-anydpi/ic_launcher_round.xml"
+        "merged": "com.m306.closetly.app-debug-85:/xml_data_extraction_rules.xml.flat",
+        "source": "com.m306.closetly.app-main-87:/xml/data_extraction_rules.xml"
     }
 ]

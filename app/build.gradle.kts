@@ -13,24 +13,34 @@ detekt {
     buildUponDefaultConfig = true
     allRules = false
     ignoreFailures = false
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 }
 
 android {
-    namespace = "com.m306.closetly"
+    namespace = "com.closetly.myapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.m306.closetly"
+        applicationId = "com.closetly.myapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 7
+        versionName = "1.2.1"
+
+        val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
+        buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
+
+        val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
+            .orElse(providers.environmentVariable("GOOGLE_WEB_CLIENT_ID"))
+            .getOrElse("348676947644-d9vd90dcp88jddraqe8gqs3ps1a55m7o.apps.googleusercontent.com")
+        resValue("string", "google_web_client_id", googleWebClientId)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -68,13 +78,24 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("com.google.firebase:firebase-storage")
-    implementation("io.coil-kt:coil-compose:2.7.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-storage")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
+    implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    implementation("com.android.billingclient:billing:8.3.0")
+    implementation("com.google.android.gms:play-services-ads:24.0.0")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
