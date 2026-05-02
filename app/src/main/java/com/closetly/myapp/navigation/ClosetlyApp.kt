@@ -211,7 +211,9 @@ fun ClosetlyApp() {
             }
             composable(Routes.FIT_CREATOR) { FitCreatorScreen() }
             composable(Routes.CLOSET) { ClosetScreen() }
-            composable(Routes.MANAGE_SUBSCRIPTION) { PremiumScreen() }
+            composable(Routes.MANAGE_SUBSCRIPTION) {
+                PremiumScreen(onBack = { navController.popBackStack() })
+            }
 
 
             composable(Routes.PROFILE) {
@@ -259,7 +261,9 @@ fun ClosetlyApp() {
                 )
             }
 
-            composable(Routes.SAVED_OUTFITS) { SavedOutfitsScreen() }
+            composable(Routes.SAVED_OUTFITS) {
+                SavedOutfitsScreen(onBack = { navController.popBackStack() })
+            }
 
             composable(Routes.STANDARD_AVATAR) {
                 StandardAvatarScreen(navController)

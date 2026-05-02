@@ -61,6 +61,7 @@ fun ClosetScreen() {
     var brand by remember { mutableStateOf("") }
     var size by remember { mutableStateOf("") }
     var purchaseLink by remember { mutableStateOf("") }
+    var purchaseLinkError by remember { mutableStateOf(false) }
 
     var editingItemId by remember { mutableStateOf<String?>(null) }
     var editCategory by remember { mutableStateOf("") }
@@ -68,6 +69,7 @@ fun ClosetScreen() {
     var editBrand by remember { mutableStateOf("") }
     var editSize by remember { mutableStateOf("") }
     var editPurchaseLink by remember { mutableStateOf("") }
+    var editPurchaseLinkError by remember { mutableStateOf(false) }
 
     val categoryOptions = listOf("Jacket", "Pants", "Pullover", "Shirt", "Shoes", "Watch")
     val colorOptions = listOf("Black", "White", "Blue", "Red", "Green", "Gray", "Beige", "Yellow", "Orange", "Violet", "Purple")
@@ -214,11 +216,18 @@ fun ClosetScreen() {
 
                         OutlinedTextField(
                             value = purchaseLink,
-                            onValueChange = { purchaseLink = it },
+                            onValueChange = {
+                                purchaseLink = it
+                                purchaseLinkError = it.isNotBlank() && !android.util.Patterns.WEB_URL.matcher(it).matches()
+                            },
                             label = { Text("Kauflink (optional)") },
                             placeholder = { Text("https://...") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            isError = purchaseLinkError,
+                            supportingText = if (purchaseLinkError) {
+                                { Text("Bitte einen gültigen Link eingeben (z. B. https://...)") }
+                            } else null
                         )
 
                         Row(
@@ -230,7 +239,8 @@ fun ClosetScreen() {
                                         category.isNotBlank() &&
                                         color.isNotBlank() &&
                                         brand.isNotBlank() &&
-                                        size.isNotBlank(),
+                                        size.isNotBlank() &&
+                                        !purchaseLinkError,
                                 onClick = {
                                     val uri = selectedImageUri ?: return@Button
 
@@ -250,6 +260,7 @@ fun ClosetScreen() {
                                     brand = ""
                                     size = ""
                                     purchaseLink = ""
+                                    purchaseLinkError = false
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -265,6 +276,7 @@ fun ClosetScreen() {
                                     brand = ""
                                     size = ""
                                     purchaseLink = ""
+                                    purchaseLinkError = false
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -422,11 +434,18 @@ fun ClosetScreen() {
 
                         OutlinedTextField(
                             value = editPurchaseLink,
-                            onValueChange = { editPurchaseLink = it },
+                            onValueChange = {
+                                editPurchaseLink = it
+                                editPurchaseLinkError = it.isNotBlank() && !android.util.Patterns.WEB_URL.matcher(it).matches()
+                            },
                             label = { Text("Kauflink (optional)") },
                             placeholder = { Text("https://...") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            isError = editPurchaseLinkError,
+                            supportingText = if (editPurchaseLinkError) {
+                                { Text("Bitte einen gültigen Link eingeben (z. B. https://...)") }
+                            } else null
                         )
 
                         Row(
@@ -438,7 +457,8 @@ fun ClosetScreen() {
                                         editCategory.isNotBlank() &&
                                         editColor.isNotBlank() &&
                                         editBrand.isNotBlank() &&
-                                        editSize.isNotBlank(),
+                                        editSize.isNotBlank() &&
+                                        !editPurchaseLinkError,
                                 onClick = {
                                     val itemId = editingItemId ?: return@Button
 
@@ -451,6 +471,7 @@ fun ClosetScreen() {
                                         purchaseLink = editPurchaseLink
                                     )
                                     editingItemId = null
+                                    editPurchaseLinkError = false
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -458,7 +479,10 @@ fun ClosetScreen() {
                             }
 
                             OutlinedButton(
-                                onClick = { editingItemId = null },
+                                onClick = {
+                                    editingItemId = null
+                                    editPurchaseLinkError = false
+                                },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Cancel")
@@ -507,6 +531,7 @@ fun ClosetScreen() {
                                 editBrand = item.brand ?: ""
                                 editSize = item.size ?: ""
                                 editPurchaseLink = item.purchaseLink ?: ""
+                                editPurchaseLinkError = false
                             },
                             onDelete = {
                                 viewModel.deleteClothingItem(item.id)
