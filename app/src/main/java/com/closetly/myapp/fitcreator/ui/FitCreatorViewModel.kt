@@ -1,5 +1,6 @@
 package com.closetly.myapp.fitcreator.ui
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.closetly.myapp.closet.data.ClosetRepository
@@ -12,6 +13,8 @@ import com.m306.closetly.ai.DailyOutfitManager
 import com.m306.closetly.ai.DailyOutfitResult
 import com.m306.closetly.ai.GeneratedOutfit
 import com.m306.closetly.ai.SeasonEngine
+import com.m306.closetly.ai.WeatherEngine
+import com.m306.closetly.ai.WeatherInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +33,7 @@ class FitCreatorViewModel : ViewModel() {
         private var cachedWardrobe: List<ClothingItemUi>? = null
     }
 
+    // ── Outfit creator state ──────────────────────────────────────────────────
     private val _selectedItems = MutableStateFlow<List<ClothingItemUi>>(emptyList())
     val selectedItems: StateFlow<List<ClothingItemUi>> = _selectedItems
 
@@ -59,6 +63,7 @@ class FitCreatorViewModel : ViewModel() {
         initialValue = emptyList()
     )
 
+    // ── AI state ──────────────────────────────────────────────────────────────
     private val _dailyOutfit = MutableStateFlow<GeneratedOutfit?>(null)
     val dailyOutfit: StateFlow<GeneratedOutfit?> = _dailyOutfit
 
@@ -73,6 +78,14 @@ class FitCreatorViewModel : ViewModel() {
 
     private val _wardrobeItems = MutableStateFlow<List<ClothingItemUi>>(emptyList())
 
+    // ── Weather state ─────────────────────────────────────────────────────────
+    private val _weatherInfo = MutableStateFlow<WeatherInfo?>(null)
+    val weatherInfo: StateFlow<WeatherInfo?> = _weatherInfo
+
+    private val _weatherOutfit = MutableStateFlow<GeneratedOutfit?>(null)
+    val weatherOutfit: StateFlow<GeneratedOutfit?> = _weatherOutfit
+
+    // ── Init ──────────────────────────────────────────────────────────────────
     init {
         loadWardrobeAndGenerateAi()
     }
@@ -120,15 +133,45 @@ class FitCreatorViewModel : ViewModel() {
     }
 
     private fun generateSuggestions(items: List<ClothingItemUi>) {
-        // Shufflen damit bei jedem Laden andere Reihenfolge
         val shuffled = items.shuffled()
         _outfitSuggestions.value = AiEngine.generateOutfitSuggestions(
             clothes = shuffled,
-            count = 5,
-            season = SeasonEngine.currentSeason()
+            count   = 5,
+            season  = SeasonEngine.currentSeason()
         )
     }
 
+    // ── Weather outfit ────────────────────────────────────────────────────────
+    fun loadWeatherOutfit(context: Context) {
+        viewModelScope.launch {
+            _aiLoading.value = true
+            val items = _wardrobeItems.value.ifEmpty { cachedWardrobe ?: emptyList() }
+
+            if (items.isEmpty()) {
+                _aiLoading.value = false
+                return@launch
+            }
+
+            val weather = WeatherEngine.getCurrentWeather(context)
+            _weatherInfo.value = weather
+
+            val season = SeasonEngine.currentSeason()
+
+            if (weather != null) {
+                val tempRange = WeatherEngine.getTempRange(weather.tempCelsius)
+                val rules     = WeatherEngine.getRecommendedCategories(tempRange, season)
+                _weatherOutfit.value = AiEngine.generateWeatherOutfit(items, rules, season)
+                    ?: AiEngine.generateBestOutfit(items, season)
+            } else {
+                // Fallback wenn kein GPS
+                _weatherOutfit.value = AiEngine.generateBestOutfit(items, season)
+            }
+
+            _aiLoading.value = false
+        }
+    }
+
+    // ── Regenerate ────────────────────────────────────────────────────────────
     fun regenerateDailyOutfit() {
         viewModelScope.launch {
             _aiLoading.value = true
@@ -163,6 +206,7 @@ class FitCreatorViewModel : ViewModel() {
         _errorMessage.value = null
     }
 
+    // ── Wardrobe actions ──────────────────────────────────────────────────────
     fun addItem(item: ClothingItemUi) {
         val currentItems = _selectedItems.value
         if (currentItems.any { it.category == item.category }) {
@@ -217,13 +261,13 @@ class FitCreatorViewModel : ViewModel() {
             }
 
             repository.saveOutfit(
-                caption = caption,
-                imageUrl = imageUrl,
+                caption       = caption,
+                imageUrl      = imageUrl,
                 clothingItems = _selectedItems.value,
-                isPublic = isPublic,
-                username = username,
-                tags = _selectedTagIds.value,
-                onSuccess = {
+                isPublic      = isPublic,
+                username      = username,
+                tags          = _selectedTagIds.value,
+                onSuccess     = {
                     _isLoading.value = false
                     _selectedItems.value = emptyList()
                     _selectedTagIds.value = emptyList()
@@ -239,30 +283,28 @@ class FitCreatorViewModel : ViewModel() {
         }
     }
 
+    // ── Outfit management ─────────────────────────────────────────────────────
     fun loadMyOutfits() {
         _isLoading.value = true
         repository.getMyOutfits(
             onSuccess = { _outfits.value = it; _isLoading.value = false },
-            onError = { _isLoading.value = false; _errorMessage.value = it.message }
+            onError   = { _isLoading.value = false; _errorMessage.value = it.message }
         )
     }
 
     fun toggleOutfitVisibility(outfitId: String, isPublic: Boolean) {
-        repository.updateOutfitVisibility(
-            outfitId, isPublic,
-            onSuccess = {},
-            onError = { _errorMessage.value = it.message }
-        )
+        repository.updateOutfitVisibility(outfitId, isPublic, onSuccess = {}, onError = { _errorMessage.value = it.message })
     }
 
     fun deleteOutfit(outfitId: String) {
         repository.deleteOutfit(
             outfitId,
             onSuccess = { _outfits.value = _outfits.value.filter { it.id != outfitId } },
-            onError = { _errorMessage.value = it.message }
+            onError   = { _errorMessage.value = it.message }
         )
     }
 
+    // ── Tag management ────────────────────────────────────────────────────────
     fun toggleNewOutfitTag(tagId: String) {
         val current = _selectedTagIds.value.toMutableList()
         if (tagId in current) current.remove(tagId) else current.add(tagId)
@@ -283,10 +325,7 @@ class FitCreatorViewModel : ViewModel() {
         _errorMessage.value = null
     }
 
-    private fun hasConflictingCategory(
-        currentItems: List<ClothingItemUi>,
-        newItem: ClothingItemUi
-    ): Boolean {
+    private fun hasConflictingCategory(currentItems: List<ClothingItemUi>, newItem: ClothingItemUi): Boolean {
         val conflicts = mapOf(
             "Shirt"   to listOf("Pullover", "Jumper"),
             "T-Shirt" to listOf("Pullover", "Jumper")

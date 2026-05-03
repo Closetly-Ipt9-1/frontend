@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -33,7 +34,11 @@ import com.closetly.myapp.tags.model.Tag
 import com.m306.closetly.ai.AiEngine
 import com.m306.closetly.ai.GeneratedOutfit
 import com.m306.closetly.ai.SeasonEngine
-
+import com.m306.closetly.ai.WeatherEngine
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun FitCreatorScreen() {
     val viewModel: FitCreatorViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
@@ -85,7 +90,7 @@ fun FitCreatorScreen() {
 
         when (selectedTab) {
             0 -> CreateOutfitTab(viewModel, closetRepository)
-            1 -> DailyOutfitTab(viewModel, onUseOutfit = {
+            1 -> GeneratorTab(viewModel, onUseOutfit = {
                 viewModel.loadSuggestionIntoCreator(it)
                 selectedTab = 0
             })
@@ -98,44 +103,82 @@ fun FitCreatorScreen() {
     }
 }
 
-// ── Daily Outfit Tab ──────────────────────────────────────────────────────────
+// ── Generator Tab (Weather + Daily) ──────────────────────────────────────────
 
 @Composable
-private fun DailyOutfitTab(
+private fun GeneratorTab(
     viewModel: FitCreatorViewModel,
     onUseOutfit: (GeneratedOutfit) -> Unit
 ) {
-    val dailyOutfit by viewModel.dailyOutfit.collectAsState()
-    val aiLoading by viewModel.aiLoading.collectAsState()
-    val aiMessage by viewModel.aiMessage.collectAsState()
-    val season = remember { SeasonEngine.currentSeason() }
+    val context       = LocalContext.current
+    val dailyOutfit   by viewModel.dailyOutfit.collectAsState()
+    val weatherOutfit by viewModel.weatherOutfit.collectAsState()
+    val weatherInfo   by viewModel.weatherInfo.collectAsState()
+    val aiLoading     by viewModel.aiLoading.collectAsState()
+    val aiMessage     by viewModel.aiMessage.collectAsState()
+    val season        = remember { SeasonEngine.currentSeason() }
+
+    // ── Permission Request ────────────────────────────────────────────────────
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            viewModel.loadWeatherOutfit(context)
+        } else {
+            // Kein GPS → Fallback auf normales Outfit
+            viewModel.loadWeatherOutfit(context)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // ── Header mit Wetter ─────────────────────────────────────────────────
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // Header in DailyOutfitTab — ersetze den Card-Inhalt:
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = "Outfit Generator",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "${season.displayName()} · ${SeasonEngine.seasonTip(season)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                    )
+                    if (weatherInfo != null) {
+                        val tempRange = WeatherEngine.getTempRange(weatherInfo!!.tempCelsius)
+                        val rules     = WeatherEngine.getRecommendedCategories(tempRange, season)
+                        Text(
+                            text = "📍 ${weatherInfo!!.city} · ${weatherInfo!!.tempCelsius.toInt()}°C · ${tempRange.displayName()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = rules.tip,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    } else {
+                        Text(
+                            text = "${season.displayName()} · ${SeasonEngine.seasonTip(season)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
         }
@@ -146,37 +189,72 @@ private fun DailyOutfitTab(
                     CircularProgressIndicator()
                 }
             }
-        } else if (dailyOutfit != null) {
-            item {
-                GeneratedOutfitCard(
-                    outfit = dailyOutfit!!,
-                    onUseOutfit = { onUseOutfit(dailyOutfit!!) }
-                )
+        } else {
+            // ── Wetter-basiertes Outfit ───────────────────────────────────────
+            weatherOutfit?.let { outfit ->
+                item {
+                    GeneratedOutfitCard(
+                        outfit      = outfit,
+                        label       = if (weatherInfo != null)
+                            "Outfit für heute (${weatherInfo!!.tempCelsius.toInt()}°C)"
+                        else
+                            "Outfit Generator",
+                        onUseOutfit = { onUseOutfit(outfit) }
+                    )
+                }
             }
+
+            // ── KI Tagesoutfit ────────────────────────────────────────────────
+            if (dailyOutfit != null && dailyOutfit != weatherOutfit) {
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    Text(
+                        text = "KI Tagesoutfit",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+                item {
+                    GeneratedOutfitCard(
+                        outfit      = dailyOutfit!!,
+                        label       = "KI Tagesoutfit",
+                        onUseOutfit = { onUseOutfit(dailyOutfit!!) }
+                    )
+                }
+            }
+
+            // ── Fehlermeldung ─────────────────────────────────────────────────
+            if (weatherOutfit == null && dailyOutfit == null) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        Text(
+                            text = aiMessage ?: "Füge mindestens ein Oberteil, eine Hose und Schuhe hinzu.",
+                            modifier = Modifier.padding(18.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // ── Regenerate Button ─────────────────────────────────────────────
             item {
                 OutlinedButton(
-                    onClick = { viewModel.regenerateDailyOutfit() },
+                    onClick = {
+                        viewModel.regenerateDailyOutfit()
+                        viewModel.loadWeatherOutfit(context)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Neues Outfit generieren")
-                }
-            }
-        } else {
-            item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Text(
-                        text = aiMessage ?: "Füge mindestens ein Oberteil und eine Hose hinzu um ein Outfit zu generieren.",
-                        modifier = Modifier.padding(18.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
@@ -191,22 +269,19 @@ private fun SuggestionsTab(
     onUseOutfit: (GeneratedOutfit) -> Unit
 ) {
     val suggestions by viewModel.outfitSuggestions.collectAsState()
-    val aiLoading by viewModel.aiLoading.collectAsState()
-    val season = remember { SeasonEngine.currentSeason() }
+    val dailyOutfit by viewModel.dailyOutfit.collectAsState()
+    val aiLoading   by viewModel.aiLoading.collectAsState()
+    val season      = remember { SeasonEngine.currentSeason() }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
@@ -229,35 +304,48 @@ private fun SuggestionsTab(
                     CircularProgressIndicator()
                 }
             }
-        } else if (suggestions.isEmpty()) {
-            item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Text(
-                        text = "Keine Vorschläge verfügbar. Füge mehr Kleidung hinzu.",
-                        modifier = Modifier.padding(18.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            // ── OOTD zuerst ───────────────────────────────────────────────────
+            dailyOutfit?.let { outfit ->
+                item(key = "ootd") {
+                    GeneratedOutfitCard(
+                        outfit      = outfit,
+                        label       = "🌅 Outfit of the Day",
+                        onUseOutfit = { onUseOutfit(outfit) }
                     )
                 }
             }
-        } else {
-            items(suggestions.size) { index ->
-                val outfit = suggestions[index]
-                GeneratedOutfitCard(
-                    outfit = outfit,
-                    label = "Vorschlag ${index + 1}",
-                    onUseOutfit = { onUseOutfit(outfit) }
-                )
+
+            if (suggestions.isEmpty() && dailyOutfit == null) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        Text(
+                            text = "Keine Vorschläge verfügbar. Füge mehr Kleidung hinzu.",
+                            modifier = Modifier.padding(18.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                items(suggestions.size) { index ->
+                    val outfit = suggestions[index]
+                    GeneratedOutfitCard(
+                        outfit      = outfit,
+                        label       = "Vorschlag ${index + 1}",
+                        onUseOutfit = { onUseOutfit(outfit) }
+                    )
+                }
             }
         }
     }
 }
 
-// ── Generated Outfit Card (shared) ────────────────────────────────────────────
+// ── Generated Outfit Card ─────────────────────────────────────────────────────
 
 @Composable
 private fun GeneratedOutfitCard(
@@ -265,17 +353,24 @@ private fun GeneratedOutfitCard(
     label: String = "Outfit",
     onUseOutfit: () -> Unit
 ) {
-    val items = listOfNotNull(outfit.top, outfit.bottom, outfit.jacket, outfit.shoes)
+    val items       = listOfNotNull(outfit.top, outfit.bottom, outfit.jacket, outfit.shoes, outfit.watch)
     val description = AiEngine.describeOutfit(outfit)
 
+    val gridHeight = when {
+        items.size <= 2 -> 110.dp
+        items.size == 3 -> 330.dp
+        items.size == 4 -> 220.dp
+        else            -> 330.dp
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier  = Modifier.fillMaxWidth(),
+        shape     = MaterialTheme.shapes.extraLarge,
+        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier  = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
@@ -283,22 +378,11 @@ private fun GeneratedOutfitCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
+                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primaryContainer) {
                     Text(
                         text = "Score: ${outfit.score}",
                         style = MaterialTheme.typography.labelSmall,
@@ -310,9 +394,7 @@ private fun GeneratedOutfitCard(
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(if (items.size > 2) 220.dp else 110.dp),
+                modifier = Modifier.fillMaxWidth().height(gridHeight),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 userScrollEnabled = false
@@ -332,9 +414,9 @@ private fun GeneratedOutfitCard(
             }
 
             Button(
-                onClick = onUseOutfit,
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large
+                onClick   = onUseOutfit,
+                modifier  = Modifier.fillMaxWidth(),
+                shape     = MaterialTheme.shapes.large
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
@@ -344,99 +426,87 @@ private fun GeneratedOutfitCard(
     }
 }
 
-// ── Existing tabs and components (unchanged) ──────────────────────────────────
+// ── Create Outfit Tab ─────────────────────────────────────────────────────────
 
 @Composable
 private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: ClosetRepository) {
-    val selectedItems by viewModel.selectedItems.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val selectedItems  by viewModel.selectedItems.collectAsState()
+    val errorMessage   by viewModel.errorMessage.collectAsState()
+    val isLoading      by viewModel.isLoading.collectAsState()
     val selectedTagIds by viewModel.selectedTagIds.collectAsState()
 
-    var clothingItems by remember { mutableStateOf<List<ClothingItemUi>>(emptyList()) }
+    var clothingItems    by remember { mutableStateOf<List<ClothingItemUi>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
-    var caption by remember { mutableStateOf("") }
-    var isPublic by remember { mutableStateOf(false) }
-    var showSaveDialog by remember { mutableStateOf(false) }
-    var isFetchingItems by remember { mutableStateOf(true) }
+    var caption          by remember { mutableStateOf("") }
+    var isPublic         by remember { mutableStateOf(false) }
+    var showSaveDialog   by remember { mutableStateOf(false) }
+    var isFetchingItems  by remember { mutableStateOf(true) }
 
     DisposableEffect(Unit) {
         closetRepository.getClothingItems(
             onSuccess = { items -> clothingItems = items; isFetchingItems = false },
-            onError = { isFetchingItems = false }
+            onError   = { isFetchingItems = false }
         )
         onDispose {}
     }
 
     if (showSaveDialog) {
         SaveOutfitDialog(
-            caption = caption,
-            isPublic = isPublic,
-            isLoading = isLoading,
-            selectedTagIds = selectedTagIds,
+            caption         = caption,
+            isPublic        = isPublic,
+            isLoading       = isLoading,
+            selectedTagIds  = selectedTagIds,
             onCaptionChange = { caption = it },
-            onPublicChange = { isPublic = it },
-            onTagToggle = { viewModel.toggleNewOutfitTag(it) },
+            onPublicChange  = { isPublic = it },
+            onTagToggle     = { viewModel.toggleNewOutfitTag(it) },
             onSave = {
                 val username = AuthManager.getCurrentUser()?.displayName ?: "Unknown"
                 viewModel.saveOutfit(
-                    caption = caption,
+                    caption  = caption,
                     imageUrl = selectedItems.firstOrNull()?.imageUrl ?: "",
                     isPublic = isPublic,
                     username = username,
                     onSuccess = { showSaveDialog = false; caption = ""; isPublic = false },
-                    onError = {}
+                    onError   = {}
                 )
             },
             onDismiss = { showSaveDialog = false }
         )
     }
 
-    val categories = clothingItems.map { it.category }.distinct()
+    val categories   = clothingItems.map { it.category }.distinct()
     val visibleItems = selectedCategory?.let { cat -> clothingItems.filter { it.category == cat } } ?: clothingItems
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(16.dp),
+        modifier        = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentPadding  = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
             OutfitPreviewCard(
                 selectedItems = selectedItems,
                 onRemove = { viewModel.removeItem(it.id) },
-                onClear = { viewModel.clearSelection() }
+                onClear  = { viewModel.clearSelection() }
             )
         }
 
         if (selectedItems.isNotEmpty()) {
             item {
                 if (!viewModel.validateOutfit()) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large),
-                        color = MaterialTheme.colorScheme.errorContainer
-                    ) {
-                        Text(
-                            text = "Wähle mindestens ein Oberteil und eine Hose aus.",
-                            modifier = Modifier.padding(12.dp),
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
+                    Surface(modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large), color = MaterialTheme.colorScheme.errorContainer) {
+                        Text(text = "Wähle mindestens ein Oberteil und eine Hose aus.", modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
                     }
                 } else {
-                    Button(
-                        onClick = { showSaveDialog = true },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = MaterialTheme.shapes.large
-                    ) { Text("Outfit speichern") }
+                    Button(onClick = { showSaveDialog = true }, modifier = Modifier.fillMaxWidth().height(48.dp), shape = MaterialTheme.shapes.large) {
+                        Text("Outfit speichern")
+                    }
                 }
             }
         }
 
         errorMessage?.let { message ->
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large),
-                    color = MaterialTheme.colorScheme.errorContainer
-                ) {
+                Surface(modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large), color = MaterialTheme.colorScheme.errorContainer) {
                     Text(text = message, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
@@ -446,20 +516,14 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
 
         if (isFetchingItems) {
             item {
-                Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
         } else {
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item { CategoryChip(label = "Alle", isSelected = selectedCategory == null, onClick = { selectedCategory = null }) }
                     items(categories) { category ->
-                        CategoryChip(
-                            label = category,
-                            isSelected = selectedCategory == category,
-                            onClick = { selectedCategory = category }
-                        )
+                        CategoryChip(label = category, isSelected = selectedCategory == category, onClick = { selectedCategory = category })
                     }
                 }
             }
@@ -478,9 +542,9 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
                         items(visibleItems) { item ->
                             val isSelected = selectedItems.any { it.id == item.id }
                             ClothingItemCard(
-                                item = item,
+                                item       = item,
                                 isSelected = isSelected,
-                                onSelect = { if (isSelected) viewModel.removeItem(item.id) else viewModel.addItem(item) }
+                                onSelect   = { if (isSelected) viewModel.removeItem(item.id) else viewModel.addItem(item) }
                             )
                         }
                     }
@@ -490,14 +554,11 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
     }
 }
 
+// ── Shared components ─────────────────────────────────────────────────────────
+
 @Composable
 private fun OutfitPreviewCard(selectedItems: List<ClothingItemUi>, onRemove: (ClothingItemUi) -> Unit, onClear: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-    ) {
+    Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
@@ -505,14 +566,9 @@ private fun OutfitPreviewCard(selectedItems: List<ClothingItemUi>, onRemove: (Cl
                     Text("${selectedItems.size} Teile ausgewählt", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (selectedItems.isNotEmpty()) {
-                    Button(
-                        onClick = onClear,
-                        shape = MaterialTheme.shapes.large,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
-                    ) { Text("Leeren") }
+                    Button(onClick = onClear, shape = MaterialTheme.shapes.large, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Leeren") }
                 }
             }
-
             Box(
                 modifier = Modifier.fillMaxWidth().height(270.dp)
                     .clip(MaterialTheme.shapes.extraLarge)
@@ -524,13 +580,7 @@ private fun OutfitPreviewCard(selectedItems: List<ClothingItemUi>, onRemove: (Cl
                 if (selectedItems.isEmpty()) {
                     Text("Tippe unten auf Kleidungsstücke, um dein Outfit zu bauen.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(18.dp))
                 } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        userScrollEnabled = false
-                    ) {
+                    LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp), userScrollEnabled = false) {
                         items(selectedItems.take(6)) { item -> SelectedItemCard(item = item, onRemove = { onRemove(item) }) }
                     }
                 }
@@ -541,13 +591,7 @@ private fun OutfitPreviewCard(selectedItems: List<ClothingItemUi>, onRemove: (Cl
 
 @Composable
 private fun CategoryChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-        tonalElevation = if (isSelected) 4.dp else 0.dp
-    ) {
+    Surface(modifier = Modifier.clickable(onClick = onClick), shape = MaterialTheme.shapes.large, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface, tonalElevation = if (isSelected) 4.dp else 0.dp) {
         Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp))
     }
 }
@@ -561,8 +605,8 @@ private fun EmptyClosetHint() {
 
 @Composable
 private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
-    val outfits by viewModel.filteredOutfits.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val outfits      by viewModel.filteredOutfits.collectAsState()
+    val isLoading    by viewModel.isLoading.collectAsState()
     val filterTagIds by viewModel.filterTagIds.collectAsState()
 
     DisposableEffect(Unit) { viewModel.loadMyOutfits(); onDispose {} }
@@ -594,12 +638,7 @@ private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
 
 @Composable
 private fun ClothingItemCard(item: ClothingItemUi, isSelected: Boolean, onSelect: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable { onSelect() },
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 5.dp else 2.dp)
-    ) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onSelect() }, shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 5.dp else 2.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             AsyncImage(model = item.imageUrl, contentDescription = item.category, modifier = Modifier.fillMaxWidth().height(136.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceVariant), contentScale = ContentScale.Crop)
             Spacer(modifier = Modifier.height(8.dp))
@@ -688,12 +727,7 @@ private fun FitTagGroup(label: String, tags: List<Tag>, selectedTagIds: List<Str
 
 @Composable
 private fun FitTagPill(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-    ) {
+    Surface(modifier = Modifier.clickable(onClick = onClick), shape = MaterialTheme.shapes.large, color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface) {
         Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
     }
 }

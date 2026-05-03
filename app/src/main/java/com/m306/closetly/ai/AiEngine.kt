@@ -40,7 +40,7 @@ private fun normalizeCategory(category: String): String = when (category.lowerca
     "pullover" -> "top"
     "shirt"    -> "top"
     "shoes"    -> "shoes"
-    "watch"    -> "accessory"
+    "watch"    -> "watch"
     else       -> category.lowercase().trim()
 }
 
@@ -49,6 +49,7 @@ data class GeneratedOutfit(
     val bottom: ClothingItemUi,
     val jacket: ClothingItemUi? = null,
     val shoes: ClothingItemUi? = null,
+    val watch: ClothingItemUi? = null,
     val score: Int = 0
 )
 
@@ -62,10 +63,10 @@ object AiEngine {
         val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }
         val jackets = clothes.filter { normalizeCategory(it.category) == "jacket" }
         val shoes   = clothes.filter { normalizeCategory(it.category) == "shoes" }
+        val watches = clothes.filter { normalizeCategory(it.category) == "watch" }
 
         if (tops.isEmpty() || bottoms.isEmpty()) return null
 
-        // Jacket nur bei Winter und Herbst
         val includeJacket = season == Season.WINTER || season == Season.AUTUMN
 
         var bestOutfit: GeneratedOutfit? = null
@@ -96,6 +97,8 @@ object AiEngine {
                             SeasonEngine.seasonColorBonus(it.color.orEmpty(), season)
                 }
 
+                val bestWatch = watches.firstOrNull()
+
                 val jacketScore = bestJacket?.let {
                     scoreColorMatch(it.color.orEmpty(), topColor) +
                             SeasonEngine.seasonCategoryBonus("jacket", season)
@@ -114,6 +117,7 @@ object AiEngine {
                         bottom = bottom,
                         jacket = bestJacket,
                         shoes  = bestShoes,
+                        watch  = bestWatch,
                         score  = totalScore
                     )
                 }
@@ -131,10 +135,10 @@ object AiEngine {
         val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }.shuffled()
         val jackets = clothes.filter { normalizeCategory(it.category) == "jacket" }
         val shoes   = clothes.filter { normalizeCategory(it.category) == "shoes" }
+        val watches = clothes.filter { normalizeCategory(it.category) == "watch" }
 
         if (tops.isEmpty() || bottoms.isEmpty()) return emptyList()
 
-        // Jacket nur bei Winter und Herbst
         val includeJacket = season == Season.WINTER || season == Season.AUTUMN
 
         val allCombinations = mutableListOf<GeneratedOutfit>()
@@ -162,12 +166,15 @@ object AiEngine {
                     scoreColorMatch(it.color.orEmpty(), bottomColor)
                 }
 
+                val bestWatch = watches.firstOrNull()
+
                 allCombinations.add(
                     GeneratedOutfit(
                         top    = top,
                         bottom = bottom,
                         jacket = bestJacket,
                         shoes  = bestShoes,
+                        watch  = bestWatch,
                         score  = score
                     )
                 )
@@ -176,8 +183,7 @@ object AiEngine {
 
         val sorted = allCombinations.sortedByDescending { it.score }
 
-        // Max 1 Outfit pro Top — garantiert Variety
-        val result = mutableListOf<GeneratedOutfit>()
+        val result    = mutableListOf<GeneratedOutfit>()
         val usedTopIds = mutableSetOf<String>()
 
         for (outfit in sorted) {
@@ -188,7 +194,6 @@ object AiEngine {
             if (result.size >= count) break
         }
 
-        // Auffüllen falls nicht genug verschiedene Tops
         if (result.size < count) {
             for (outfit in sorted) {
                 if (outfit !in result) result.add(outfit)
@@ -197,6 +202,80 @@ object AiEngine {
         }
 
         return result
+    }
+
+    fun generateWeatherOutfit(
+        clothes: List<ClothingItemUi>,
+        rules: WeatherOutfitRules,
+        season: Season = SeasonEngine.currentSeason()
+    ): GeneratedOutfit? {
+        val tops = clothes.filter { normalizeCategory(it.category) == "top" }
+            .filter { item ->
+                val cat = item.category.lowercase()
+                when {
+                    rules.needsPullover && !rules.allowsShirt -> cat == "pullover"
+                    rules.allowsShirt && !rules.needsPullover -> cat == "shirt"
+                    else -> cat == "pullover" || cat == "shirt"
+                }
+            }
+            .ifEmpty {
+                clothes.filter { normalizeCategory(it.category) == "top" }
+            }
+
+        val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }
+        val jackets = clothes.filter { normalizeCategory(it.category) == "jacket" }
+        val shoes   = clothes.filter { normalizeCategory(it.category) == "shoes" }
+        val watches = clothes.filter { normalizeCategory(it.category) == "watch" }
+
+        if (tops.isEmpty() || bottoms.isEmpty()) return null
+        if (shoes.isEmpty()) return null  // Shoes always required
+
+        var bestOutfit: GeneratedOutfit? = null
+        var highestScore = -1
+
+        for (top in tops) {
+            for (bottom in bottoms) {
+                val topColor    = top.color.orEmpty()
+                val bottomColor = bottom.color.orEmpty()
+                val topStyle    = top.style.orEmpty()
+
+                val baseScore = scoreColorMatch(topColor, bottomColor) +
+                        scoreStyleMatch(topStyle, bottom.style.orEmpty()) +
+                        SeasonEngine.seasonColorBonus(topColor, season) +
+                        SeasonEngine.seasonColorBonus(bottomColor, season) +
+                        SeasonEngine.seasonStyleBonus(topStyle, season)
+
+                val bestJacket = if (rules.needsJacket) {
+                    jackets.maxByOrNull {
+                        scoreColorMatch(it.color.orEmpty(), topColor) +
+                                SeasonEngine.seasonColorBonus(it.color.orEmpty(), season)
+                    }
+                } else null
+
+                val bestShoes = shoes.maxByOrNull {
+                    scoreColorMatch(it.color.orEmpty(), bottomColor)
+                }
+
+                val bestWatch = watches.firstOrNull()
+
+                val jacketScore = bestJacket?.let { scoreColorMatch(it.color.orEmpty(), topColor) } ?: 0
+                val shoesScore  = bestShoes?.let  { scoreColorMatch(it.color.orEmpty(), bottomColor) } ?: 0
+                val totalScore  = baseScore + jacketScore + shoesScore
+
+                if (totalScore > highestScore) {
+                    highestScore = totalScore
+                    bestOutfit = GeneratedOutfit(
+                        top    = top,
+                        bottom = bottom,
+                        jacket = bestJacket,
+                        shoes  = bestShoes,
+                        watch  = bestWatch,
+                        score  = totalScore
+                    )
+                }
+            }
+        }
+        return bestOutfit
     }
 
     fun scoreColorMatch(color1: String, color2: String): Int {
@@ -222,6 +301,7 @@ object AiEngine {
         sb.append(" + ${outfit.bottom.color.orEmpty().replaceFirstChar { it.uppercase() }} ${outfit.bottom.brand.orEmpty().ifEmpty { outfit.bottom.category }}")
         outfit.jacket?.let { sb.append(" + ${it.color.orEmpty().replaceFirstChar { it.uppercase() }} Jacket") }
         outfit.shoes?.let  { sb.append(" + ${it.color.orEmpty().replaceFirstChar { it.uppercase() }} Shoes") }
+        outfit.watch?.let  { sb.append(" + ${it.brand.orEmpty().ifEmpty { "Watch" }}") }
         return sb.toString()
     }
 }
