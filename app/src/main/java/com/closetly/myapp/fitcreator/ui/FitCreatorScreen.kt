@@ -413,12 +413,12 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
     var caption          by remember { mutableStateOf("") }
     var isPublic         by remember { mutableStateOf(false) }
     var showSaveDialog   by remember { mutableStateOf(false) }
-    var isFetchingItems  by remember { mutableStateOf(true) }
+    var isLoadingItems  by remember { mutableStateOf(true) }
 
     DisposableEffect(Unit) {
         closetRepository.getClothingItems(
-            onSuccess = { items -> clothingItems = items; isFetchingItems = false },
-            onError   = { isFetchingItems = false }
+            onSuccess = { items -> clothingItems = items; isLoadingItems = false },
+            onError   = { isLoadingItems = false }
         )
         onDispose {}
     }

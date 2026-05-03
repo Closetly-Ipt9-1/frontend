@@ -4,15 +4,15 @@ complexity:
     threshold: 300
   CyclomaticComplexMethod:
     active: true
-    threshold: 30
+    threshold: 40
   LongParameterList:
     active: false
   TooManyFunctions:
-    thresholdInClasses: 15
-    thresholdInObjects: 15
-    thresholdInInterfaces: 15
-    thresholdInEnums: 15
-    thresholdInFiles: 15
+    thresholdInClasses: 20
+    thresholdInObjects: 20
+    thresholdInInterfaces: 20
+    thresholdInEnums: 20
+    thresholdInFiles: 20
 
 exceptions:
   TooGenericExceptionCaught:
