@@ -111,14 +111,12 @@ private fun GeneratorTab(
     onUseOutfit: (GeneratedOutfit) -> Unit
 ) {
     val context       = LocalContext.current
-    val dailyOutfit   by viewModel.dailyOutfit.collectAsState()
     val weatherOutfit by viewModel.weatherOutfit.collectAsState()
     val weatherInfo   by viewModel.weatherInfo.collectAsState()
     val aiLoading     by viewModel.aiLoading.collectAsState()
     val aiMessage     by viewModel.aiMessage.collectAsState()
     val season        = remember { SeasonEngine.currentSeason() }
 
-    // ── Permission Request ────────────────────────────────────────────────────
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -127,7 +125,6 @@ private fun GeneratorTab(
         if (granted) {
             viewModel.loadWeatherOutfit(context)
         } else {
-            // Kein GPS → Fallback auf normales Outfit
             viewModel.loadWeatherOutfit(context)
         }
     }
@@ -190,7 +187,7 @@ private fun GeneratorTab(
                 }
             }
         } else {
-            // ── Wetter-basiertes Outfit ───────────────────────────────────────
+            // ── Nur Wetter-Outfit ─────────────────────────────────────────────
             weatherOutfit?.let { outfit ->
                 item {
                     GeneratedOutfitCard(
@@ -204,28 +201,7 @@ private fun GeneratorTab(
                 }
             }
 
-            // ── KI Tagesoutfit ────────────────────────────────────────────────
-            if (dailyOutfit != null && dailyOutfit != weatherOutfit) {
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    Text(
-                        text = "KI Tagesoutfit",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-                item {
-                    GeneratedOutfitCard(
-                        outfit      = dailyOutfit!!,
-                        label       = "KI Tagesoutfit",
-                        onUseOutfit = { onUseOutfit(dailyOutfit!!) }
-                    )
-                }
-            }
-
-            // ── Fehlermeldung ─────────────────────────────────────────────────
-            if (weatherOutfit == null && dailyOutfit == null) {
+            if (weatherOutfit == null) {
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -245,10 +221,7 @@ private fun GeneratorTab(
             // ── Regenerate Button ─────────────────────────────────────────────
             item {
                 OutlinedButton(
-                    onClick = {
-                        viewModel.regenerateDailyOutfit()
-                        viewModel.loadWeatherOutfit(context)
-                    },
+                    onClick = { viewModel.loadWeatherOutfit(context) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large
                 ) {

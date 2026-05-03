@@ -4,15 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import kotlin.coroutines.resume
 
-private const val OPENWEATHER_API_KEY = "1a857f11487b2ffec5f4a64d7791b20b"
-
+private val OPENWEATHER_API_KEY = com.closetly.myapp.BuildConfig.OPENWEATHER_API_KEY
 data class WeatherInfo(
     val tempCelsius: Double,
     val description: String,
@@ -20,11 +21,11 @@ data class WeatherInfo(
 )
 
 enum class TempRange {
-    FREEZING,   // < 5°C
-    COLD,       // 5–12°C
-    COOL,       // 12–18°C
-    MILD,       // 18–25°C
-    HOT;        // > 25°C
+    FREEZING,
+    COLD,
+    COOL,
+    MILD,
+    HOT;
 
     fun displayName(): String = when (this) {
         FREEZING -> "Sehr kalt"
@@ -44,9 +45,12 @@ object WeatherEngine {
     suspend fun getCurrentWeather(context: Context): WeatherInfo? {
         val location = withTimeoutOrNull(5000) {
             getLocation(context)
-        } ?: return null
+        }
 
-        return fetchWeather(location.first, location.second)
+        // Falls GPS null → Fallback auf Luzern
+        val (lat, lon) = location ?: Pair(47.0502, 8.3093)
+
+        return fetchWeather(lat, lon)
     }
 
     @SuppressLint("MissingPermission")
@@ -66,37 +70,45 @@ object WeatherEngine {
                 }
         }
 
-    private fun fetchWeather(lat: Double, lon: Double): WeatherInfo? {
-        return try {
-            val url = "https://api.openweathermap.org/data/2.5/weather" +
-                    "?lat=$lat&lon=$lon&appid=$OPENWEATHER_API_KEY&units=metric"
+    private suspend fun fetchWeather(lat: Double, lon: Double): WeatherInfo? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = "https://api.openweathermap.org/data/2.5/weather" +
+                        "?lat=$lat&lon=$lon&appid=$OPENWEATHER_API_KEY&units=metric"
 
-            val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-            val body     = response.body?.string() ?: return null
-            val json     = JSONObject(body)
+                android.util.Log.d("WEATHER_GEN", "Fetching URL: $url")
 
-            val temp        = json.getJSONObject("main").getDouble("temp")
-            val description = json.getJSONArray("weather").getJSONObject(0).getString("description")
-            val city        = json.getString("name")
+                val request  = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val body     = response.body?.string() ?: return@withContext null
 
-            WeatherInfo(
-                tempCelsius = temp,
-                description = description,
-                city        = city
-            )
-        } catch (e: Exception) {
-            null
+                android.util.Log.d("WEATHER_GEN", "Response code: ${response.code}")
+                android.util.Log.d("WEATHER_GEN", "Response body: $body")
+
+                val json        = JSONObject(body)
+                val temp        = json.getJSONObject("main").getDouble("temp")
+                val description = json.getJSONArray("weather").getJSONObject(0).getString("description")
+                val city        = json.getString("name")
+
+                WeatherInfo(
+                    tempCelsius = temp,
+                    description = description,
+                    city        = city
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("WEATHER_GEN", "fetchWeather error: ${e.message}", e)
+                null
+            }
         }
     }
 
     // ── Temp range from celsius ───────────────────────────────────────────────
     fun getTempRange(celsius: Double): TempRange = when {
-        celsius < 5   -> TempRange.FREEZING
-        celsius < 12  -> TempRange.COLD
-        celsius < 18  -> TempRange.COOL
-        celsius < 25  -> TempRange.MILD
-        else          -> TempRange.HOT
+        celsius < 5  -> TempRange.FREEZING
+        celsius < 12 -> TempRange.COLD
+        celsius < 18 -> TempRange.COOL
+        celsius < 25 -> TempRange.MILD
+        else         -> TempRange.HOT
     }
 
     // ── What categories to include based on temp + season ────────────────────
@@ -131,7 +143,7 @@ object WeatherEngine {
             )
             TempRange.MILD -> WeatherOutfitRules(
                 needsJacket   = false,
-                needsPullover = season == Season.AUTUMN || season == Season.WINTER,
+                needsPullover = true,
                 allowsShirt   = true,
                 needsShoes    = true,
                 allowsWatch   = true,

@@ -147,6 +147,9 @@ class FitCreatorViewModel : ViewModel() {
             _aiLoading.value = true
             val items = _wardrobeItems.value.ifEmpty { cachedWardrobe ?: emptyList() }
 
+            android.util.Log.d("WEATHER_GEN", "Items count: ${items.size}")
+            android.util.Log.d("WEATHER_GEN", "Items: ${items.map { "${it.category} ${it.color}" }}")
+
             if (items.isEmpty()) {
                 _aiLoading.value = false
                 return@launch
@@ -155,16 +158,22 @@ class FitCreatorViewModel : ViewModel() {
             val weather = WeatherEngine.getCurrentWeather(context)
             _weatherInfo.value = weather
 
-            val season = SeasonEngine.currentSeason()
+            val season   = SeasonEngine.currentSeason()
+            val shuffled = items.shuffled()
+
+            android.util.Log.d("WEATHER_GEN", "Shuffled: ${shuffled.map { "${it.category} ${it.color}" }}")
+            android.util.Log.d("WEATHER_GEN", "Temp: ${weather?.tempCelsius}°C")
 
             if (weather != null) {
                 val tempRange = WeatherEngine.getTempRange(weather.tempCelsius)
                 val rules     = WeatherEngine.getRecommendedCategories(tempRange, season)
-                _weatherOutfit.value = AiEngine.generateWeatherOutfit(items, rules, season)
-                    ?: AiEngine.generateBestOutfit(items, season)
+                _weatherOutfit.value = AiEngine.generateWeatherOutfit(shuffled, rules, season)
+                    ?: AiEngine.generateBestOutfit(shuffled, season)
             } else {
-                // Fallback wenn kein GPS
-                _weatherOutfit.value = AiEngine.generateBestOutfit(items, season)
+                // Fallback: kein GPS → trotzdem verschiedene Outfits zeigen
+                val suggestions = AiEngine.generateOutfitSuggestions(shuffled, count = 6, season = season)
+                _weatherOutfit.value = suggestions.randomOrNull()
+                    ?: AiEngine.generateBestOutfit(shuffled, season)
             }
 
             _aiLoading.value = false

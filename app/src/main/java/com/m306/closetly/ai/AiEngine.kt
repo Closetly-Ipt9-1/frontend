@@ -218,20 +218,22 @@ object AiEngine {
                     else -> cat == "pullover" || cat == "shirt"
                 }
             }
+            .shuffled() // ← neu
             .ifEmpty {
-                clothes.filter { normalizeCategory(it.category) == "top" }
+                clothes.filter { normalizeCategory(it.category) == "top" }.shuffled()
             }
 
-        val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }
+        val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }.shuffled() // ← neu
         val jackets = clothes.filter { normalizeCategory(it.category) == "jacket" }
         val shoes   = clothes.filter { normalizeCategory(it.category) == "shoes" }
         val watches = clothes.filter { normalizeCategory(it.category) == "watch" }
 
         if (tops.isEmpty() || bottoms.isEmpty()) return null
-        if (shoes.isEmpty()) return null  // Shoes always required
+        if (shoes.isEmpty()) return null
 
-        var bestOutfit: GeneratedOutfit? = null
-        var highestScore = -1
+        // Anstatt bestes Outfit — zufällige valide Kombination zurückgeben
+        // damit Regenerate immer etwas anderes zeigt
+        val allCombinations = mutableListOf<GeneratedOutfit>()
 
         for (top in tops) {
             for (bottom in bottoms) {
@@ -262,9 +264,8 @@ object AiEngine {
                 val shoesScore  = bestShoes?.let  { scoreColorMatch(it.color.orEmpty(), bottomColor) } ?: 0
                 val totalScore  = baseScore + jacketScore + shoesScore
 
-                if (totalScore > highestScore) {
-                    highestScore = totalScore
-                    bestOutfit = GeneratedOutfit(
+                allCombinations.add(
+                    GeneratedOutfit(
                         top    = top,
                         bottom = bottom,
                         jacket = bestJacket,
@@ -272,10 +273,15 @@ object AiEngine {
                         watch  = bestWatch,
                         score  = totalScore
                     )
-                }
+                )
             }
         }
-        return bestOutfit
+
+        if (allCombinations.isEmpty()) return null
+
+        // Nicht immer das beste — rotiere durch Top-3 um Variety zu garantieren
+        val top3 = allCombinations.sortedByDescending { it.score }.take(3)
+        return top3.random()
     }
 
     fun scoreColorMatch(color1: String, color2: String): Int {

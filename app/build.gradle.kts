@@ -30,6 +30,9 @@ android {
         val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
         buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
 
+        val openWeatherKey = project.findProperty("OPENWEATHER_API_KEY") as String? ?: ""
+        buildConfigField("String", "OPENWEATHER_API_KEY", "\"$openWeatherKey\"")
+
         val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
             .orElse(providers.environmentVariable("GOOGLE_WEB_CLIENT_ID"))
             .getOrElse("348676947644-d9vd90dcp88jddraqe8gqs3ps1a55m7o.apps.googleusercontent.com")
@@ -100,6 +103,7 @@ dependencies {
     implementation("com.android.billingclient:billing:8.3.0")
     implementation("com.google.android.gms:play-services-ads:24.0.0")
 }
+
 
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest")
