@@ -13,7 +13,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import kotlin.coroutines.resume
 
-private val OPENWEATHER_API_KEY = com.closetly.myapp.BuildConfig.OPENWEATHER_API_KEY
+private const val OPENWEATHER_API_KEY = com.closetly.myapp.BuildConfig.OPENWEATHER_API_KEY
 data class WeatherInfo(
     val tempCelsius: Double,
     val description: String,
