@@ -8,5 +8,6 @@ data class ClothingItemUi(
     val brand: String? = null,
     val size: String? = null,
     val purchaseLink: String? = null,
+    val style: String? = null,
     val tags: List<String> = emptyList()
 )

@@ -6,5 +6,7 @@ data class ClothingItemInput(
     val color: String?,
     val brand: String?,
     val size: String?,
-    val purchaseLink: String?
+    val purchaseLink: String?,
+    val style: String? = null,
+    val tags: List<String> = emptyList()
 )

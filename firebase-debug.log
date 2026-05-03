@@ -1,0 +1,38 @@
+[debug] [2026-04-30T12:08:47.085Z] ----------------------------------------------------------------------
+[debug] [2026-04-30T12:08:47.088Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\marse\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init functions
+[debug] [2026-04-30T12:08:47.089Z] CLI Version:   15.15.0
+[debug] [2026-04-30T12:08:47.089Z] Platform:      win32
+[debug] [2026-04-30T12:08:47.089Z] Node Version:  v24.13.0
+[debug] [2026-04-30T12:08:47.090Z] Time:          Thu Apr 30 2026 14:08:47 GMT+0200 (Mitteleuropäische Sommerzeit)
+[debug] [2026-04-30T12:08:47.090Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-30T12:08:47.092Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\marse\frontend
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[debug] [2026-04-30T12:08:50.276Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-04-30T12:08:50.276Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[info] No default project found. Continuing without a project in non interactive mode.
+[info] 
+=== Functions Setup
+[info] 
+Detected existing codebase(s): default
+

@@ -1,5 +1,6 @@
 package com.closetly.myapp.closet.ui
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,10 +35,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.closetly.myapp.closet.func.getColorFromName
 import com.closetly.myapp.closet.model.ClothingItemUi
+import com.closetly.myapp.tags.model.PredefinedTags
+import com.m306.closetly.ai.ShoppingEngine
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod")
@@ -48,7 +53,6 @@ fun ClosetScreen() {
     val filteredClothes by viewModel.filteredClothes.collectAsState()
     val isBusy by viewModel.isBusy.collectAsState()
     val message by viewModel.message.collectAsState()
-
 
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val selectedColor by viewModel.selectedColor.collectAsState()
@@ -62,6 +66,8 @@ fun ClosetScreen() {
     var size by remember { mutableStateOf("") }
     var purchaseLink by remember { mutableStateOf("") }
     var purchaseLinkError by remember { mutableStateOf(false) }
+    var selectedOccasion by remember { mutableStateOf<String?>(null) }
+    var selectedStyle by remember { mutableStateOf<String?>(null) }
 
     var editingItemId by remember { mutableStateOf<String?>(null) }
     var editCategory by remember { mutableStateOf("") }
@@ -70,6 +76,84 @@ fun ClosetScreen() {
     var editSize by remember { mutableStateOf("") }
     var editPurchaseLink by remember { mutableStateOf("") }
     var editPurchaseLinkError by remember { mutableStateOf(false) }
+    var editOccasion by remember { mutableStateOf<String?>(null) }
+    var editStyle by remember { mutableStateOf<String?>(null) }
+
+    // ── Shopping Popup ────────────────────────────────────────────────────────
+    var showShoppingPopup by remember { mutableStateOf(false) }
+    val shoppingRecommendation = remember(filteredClothes) {
+        ShoppingEngine.generateRecommendation(filteredClothes)
+    }
+
+    LaunchedEffect(shoppingRecommendation) {
+        if (shoppingRecommendation != null) {
+            showShoppingPopup = true
+        }
+    }
+
+    if (showShoppingPopup && shoppingRecommendation != null) {
+        AlertDialog(
+            onDismissRequest = { showShoppingPopup = false },
+            shape = MaterialTheme.shapes.extraLarge,
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Style Tip",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = shoppingRecommendation.headline,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = shoppingRecommendation.reason,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            shoppingRecommendation.shoppingUrl.toUri()
+                        )
+                        context.startActivity(intent)
+                        showShoppingPopup = false
+                    },
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Shop on Google")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showShoppingPopup = false },
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text("Later")
+                }
+            }
+        )
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     val categoryOptions = listOf("Jacket", "Pants", "Pullover", "Shirt", "Shoes", "Watch")
     val colorOptions = listOf("Black", "White", "Blue", "Red", "Green", "Gray", "Beige", "Yellow", "Orange", "Violet", "Purple")
@@ -78,9 +162,7 @@ fun ClosetScreen() {
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
-    ) { uri ->
-        selectedImageUri = uri
-    }
+    ) { uri -> selectedImageUri = uri }
 
     LazyColumn(
         modifier = Modifier
@@ -97,10 +179,7 @@ fun ClosetScreen() {
                     .clip(MaterialTheme.shapes.extraLarge)
                     .background(
                         Brush.linearGradient(
-                            listOf(
-                                Color(0xFF173742),
-                                MaterialTheme.colorScheme.surfaceVariant
-                            )
+                            listOf(Color(0xFF173742), MaterialTheme.colorScheme.surfaceVariant)
                         )
                     )
                     .padding(22.dp)
@@ -135,9 +214,7 @@ fun ClosetScreen() {
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -230,6 +307,36 @@ fun ClosetScreen() {
                             } else null
                         )
 
+                        Text(
+                            text = "Occasion",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(PredefinedTags.OCCASION) { tag ->
+                                FilterChip(
+                                    selected = selectedOccasion == tag.id,
+                                    onClick = { selectedOccasion = if (selectedOccasion == tag.id) null else tag.id },
+                                    label = { Text(tag.name) }
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "Style",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(PredefinedTags.STYLE) { tag ->
+                                FilterChip(
+                                    selected = selectedStyle == tag.id,
+                                    onClick = { selectedStyle = if (selectedStyle == tag.id) null else tag.id },
+                                    label = { Text(tag.name) }
+                                )
+                            }
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -243,7 +350,8 @@ fun ClosetScreen() {
                                         !purchaseLinkError,
                                 onClick = {
                                     val uri = selectedImageUri ?: return@Button
-
+                                    val combinedTags = listOfNotNull(selectedOccasion, selectedStyle)
+                                    val styleValue = selectedOccasion ?: selectedStyle ?: ""
                                     viewModel.saveClothingItemWithRemovedBackground(
                                         context = context,
                                         imageUri = uri,
@@ -251,7 +359,9 @@ fun ClosetScreen() {
                                         color = color,
                                         brand = brand,
                                         size = size,
-                                        purchaseLink = purchaseLink
+                                        purchaseLink = purchaseLink,
+                                        style = styleValue,
+                                        tags = combinedTags
                                     )
 
                                     selectedImageUri = null
@@ -261,6 +371,8 @@ fun ClosetScreen() {
                                     size = ""
                                     purchaseLink = ""
                                     purchaseLinkError = false
+                                    selectedOccasion = null
+                                    selectedStyle = null
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -277,6 +389,8 @@ fun ClosetScreen() {
                                     size = ""
                                     purchaseLink = ""
                                     purchaseLinkError = false
+                                    selectedOccasion = null
+                                    selectedStyle = null
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -318,11 +432,7 @@ fun ClosetScreen() {
                             ClosetFilterChip(
                                 label = option,
                                 isSelected = selectedCategory == option,
-                                onClick = {
-                                    viewModel.setSelectedCategory(
-                                        if (selectedCategory == option) null else option
-                                    )
-                                }
+                                onClick = { viewModel.setSelectedCategory(if (selectedCategory == option) null else option) }
                             )
                         }
                     }
@@ -330,7 +440,7 @@ fun ClosetScreen() {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
                             ClosetFilterChip(
-                                label = "All Color",
+                                label = "All Colors",
                                 isSelected = selectedColor == null,
                                 onClick = { viewModel.setSelectedColor(null) }
                             )
@@ -339,28 +449,13 @@ fun ClosetScreen() {
                             ClosetColorChip(
                                 label = option,
                                 isSelected = selectedColor == option,
-                                onClick = {
-                                    viewModel.setSelectedColor(
-                                        if (selectedColor == option) null else option
-                                    )
-                                }
+                                onClick = { viewModel.setSelectedColor(if (selectedColor == option) null else option) }
                             )
                         }
                     }
 
-                    FilterDropdown(
-                        label = "Brand",
-                        options = brandOptions,
-                        selectedValue = selectedBrand,
-                        onValueSelected = { viewModel.setSelectedBrand(it) }
-                    )
-
-                    FilterDropdown(
-                        label = "Size",
-                        options = sizeOptions,
-                        selectedValue = selectedSize,
-                        onValueSelected = { viewModel.setSelectedSize(it) }
-                    )
+                    FilterDropdown(label = "Brand", options = brandOptions, selectedValue = selectedBrand, onValueSelected = { viewModel.setSelectedBrand(it) })
+                    FilterDropdown(label = "Size", options = sizeOptions, selectedValue = selectedSize, onValueSelected = { viewModel.setSelectedSize(it) })
 
                     OutlinedButton(
                         onClick = { viewModel.clearFilters() },
@@ -375,16 +470,8 @@ fun ClosetScreen() {
 
         if (message.isNotBlank()) {
             item(key = "message") {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(14.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer) {
+                    Text(text = message, modifier = Modifier.padding(14.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
         }
@@ -392,45 +479,17 @@ fun ClosetScreen() {
         if (editingItemId != null) {
             item(key = "edit_form") {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge),
+                    modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Edit Item", style = MaterialTheme.typography.titleMedium)
 
-                        DropdownSelector(
-                            label = "Category",
-                            options = categoryOptions,
-                            selectedValue = editCategory,
-                            onValueSelected = { editCategory = it }
-                        )
-
-                        DropdownSelector(
-                            label = "Color",
-                            options = colorOptions,
-                            selectedValue = editColor,
-                            onValueSelected = { editColor = it }
-                        )
-
-                        DropdownSelector(
-                            label = "Brand",
-                            options = brandOptions,
-                            selectedValue = editBrand,
-                            onValueSelected = { editBrand = it }
-                        )
-
-                        DropdownSelector(
-                            label = "Size",
-                            options = sizeOptions,
-                            selectedValue = editSize,
-                            onValueSelected = { editSize = it }
-                        )
+                        DropdownSelector(label = "Category", options = categoryOptions, selectedValue = editCategory, onValueSelected = { editCategory = it })
+                        DropdownSelector(label = "Color", options = colorOptions, selectedValue = editColor, onValueSelected = { editColor = it })
+                        DropdownSelector(label = "Brand", options = brandOptions, selectedValue = editBrand, onValueSelected = { editBrand = it })
+                        DropdownSelector(label = "Size", options = sizeOptions, selectedValue = editSize, onValueSelected = { editSize = it })
 
                         OutlinedTextField(
                             value = editPurchaseLink,
@@ -448,10 +507,37 @@ fun ClosetScreen() {
                             } else null
                         )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        Text(
+                            text = "Occasion",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(PredefinedTags.OCCASION) { tag ->
+                                FilterChip(
+                                    selected = editOccasion == tag.id,
+                                    onClick = { editOccasion = if (editOccasion == tag.id) null else tag.id },
+                                    label = { Text(tag.name) }
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "Style",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(PredefinedTags.STYLE) { tag ->
+                                FilterChip(
+                                    selected = editStyle == tag.id,
+                                    onClick = { editStyle = if (editStyle == tag.id) null else tag.id },
+                                    label = { Text(tag.name) }
+                                )
+                            }
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 enabled = !isBusy &&
                                         editCategory.isNotBlank() &&
@@ -461,32 +547,35 @@ fun ClosetScreen() {
                                         !editPurchaseLinkError,
                                 onClick = {
                                     val itemId = editingItemId ?: return@Button
-
+                                    val combinedTags = listOfNotNull(editOccasion, editStyle)
+                                    val styleValue = editOccasion ?: editStyle ?: ""
                                     viewModel.updateClothingItem(
                                         itemId = itemId,
                                         category = editCategory,
                                         color = editColor,
                                         brand = editBrand,
                                         size = editSize,
-                                        purchaseLink = editPurchaseLink
+                                        purchaseLink = editPurchaseLink,
+                                        style = styleValue,
+                                        tags = combinedTags
                                     )
                                     editingItemId = null
                                     editPurchaseLinkError = false
+                                    editOccasion = null
+                                    editStyle = null
                                 },
                                 modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Save")
-                            }
+                            ) { Text("Save") }
 
                             OutlinedButton(
                                 onClick = {
                                     editingItemId = null
                                     editPurchaseLinkError = false
+                                    editOccasion = null
+                                    editStyle = null
                                 },
                                 modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Cancel")
-                            }
+                            ) { Text("Cancel") }
                         }
                     }
                 }
@@ -495,11 +584,7 @@ fun ClosetScreen() {
 
         item(key = "clothes_grid") {
             if (filteredClothes.isEmpty()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
+                Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
                     Text(
                         text = "No clothing found yet. Add your first item above.",
                         modifier = Modifier.padding(18.dp),
@@ -511,17 +596,12 @@ fun ClosetScreen() {
                 val rows = (filteredClothes.size + 1) / 2
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height((rows * 254).dp),
+                    modifier = Modifier.fillMaxWidth().height((rows * 254).dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     userScrollEnabled = false
                 ) {
-                    items(
-                        items = filteredClothes,
-                        key = { it.id }
-                    ) { item ->
+                    items(items = filteredClothes, key = { it.id }) { item ->
                         ClosetGridItemCard(
                             item = item,
                             onEdit = {
@@ -532,10 +612,10 @@ fun ClosetScreen() {
                                 editSize = item.size ?: ""
                                 editPurchaseLink = item.purchaseLink ?: ""
                                 editPurchaseLinkError = false
+                                editOccasion = item.tags.firstOrNull { it.startsWith("occasion_") }
+                                editStyle = item.tags.firstOrNull { it.startsWith("style_") }
                             },
-                            onDelete = {
-                                viewModel.deleteClothingItem(item.id)
-                            }
+                            onDelete = { viewModel.deleteClothingItem(item.id) }
                         )
                     }
                 }
@@ -548,60 +628,37 @@ fun ClosetScreen() {
     }
 }
 
+// ── Components ────────────────────────────────────────────────────────────────
+
 @Composable
-private fun ClosetFilterChip(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun ClosetFilterChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
         contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)
-        )
+        Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
     }
 }
 
 @Composable
-private fun ClosetColorChip(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun ClosetColorChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
         contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(13.dp)
-                    .background(getColorFromName(label), CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-            )
+        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            Box(modifier = Modifier.size(13.dp).background(getColorFromName(label), CircleShape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
             Text(text = label, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
 @Composable
-private fun ClosetGridItemCard(
-    item: ClothingItemUi,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
+private fun ClosetGridItemCard(item: ClothingItemUi, onEdit: () -> Unit, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -615,28 +672,14 @@ private fun ClosetGridItemCard(
                 AsyncImage(
                     model = item.imageUrl,
                     contentDescription = item.category,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(142.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth().height(142.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceVariant),
                     contentScale = ContentScale.Crop
                 )
-
                 IconButton(
                     onClick = { expanded = !expanded },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(32.dp)
-                        .background(Color.Black.copy(alpha = 0.38f), CircleShape)
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(32.dp).background(Color.Black.copy(alpha = 0.38f), CircleShape)
                 ) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "Menu",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.White, modifier = Modifier.size(18.dp))
                 }
 
                 DropdownMenu(
@@ -661,28 +704,11 @@ private fun ClosetGridItemCard(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = item.category,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
+            Text(text = item.category, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 item.color?.takeIf { it.isNotBlank() }?.let {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(getColorFromName(it), CircleShape)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                    )
+                    Box(modifier = Modifier.size(10.dp).background(getColorFromName(it), CircleShape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
                 }
                 Text(
                     text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "No details" },
@@ -696,11 +722,7 @@ private fun ClosetGridItemCard(
 }
 
 @Composable
-fun ClothingItemCard(
-    item: ClothingItemUi,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
+fun ClothingItemCard(item: ClothingItemUi, onEdit: () -> Unit, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -714,80 +736,27 @@ fun ClothingItemCard(
                 AsyncImage(
                     model = item.imageUrl,
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                        .clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth().height(220.dp).clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surfaceVariant),
                     contentScale = ContentScale.Crop
                 )
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.46f), MaterialTheme.shapes.medium)
-                ) {
-                    IconButton(
-                        onClick = { expanded = !expanded },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = "Menu",
-                            tint = Color.White
-                        )
+                Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).background(Color.Black.copy(alpha = 0.46f), MaterialTheme.shapes.medium)) {
+                    IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.White)
                     }
-
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Edit") },
-                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                            onClick = {
-                                onEdit()
-                                expanded = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete") },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                            onClick = {
-                                onDelete()
-                                expanded = false
-                            }
-                        )
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }, onClick = { onEdit(); expanded = false })
+                        DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }, onClick = { onDelete(); expanded = false })
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.category,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "No details" },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(text = item.category, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "No details" }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 item.color?.takeIf { it.isNotBlank() }?.let {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(getColorFromName(it), CircleShape)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                    )
+                    Box(modifier = Modifier.size(28.dp).background(getColorFromName(it), CircleShape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
                 }
             }
         }
@@ -796,82 +765,40 @@ fun ClothingItemCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropdownSelector(
-    label: String,
-    options: List<String>,
-    selectedValue: String,
-    onValueSelected: (String) -> Unit
-) {
+fun DropdownSelector(label: String, options: List<String>, selectedValue: String, onValueSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorSelector = label == "Color" || label == "Color"
+    val isColorSelector = label == "Color"
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded }
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
             value = selectedValue,
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             trailingIcon = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isColorSelector && selectedValue.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .background(
-                                    color = getColorFromName(selectedValue),
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
-                        )
-
+                        Box(modifier = Modifier.size(20.dp).background(getColorFromName(selectedValue), RoundedCornerShape(4.dp)).border(1.dp, Color.Gray, RoundedCornerShape(4.dp)))
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 }
             }
         )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
                     text = {
                         if (isColorSelector) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .background(
-                                            color = getColorFromName(option),
-                                            shape = RoundedCornerShape(4.dp)
-                                        )
-                                        .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
-                                )
-
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(20.dp).background(getColorFromName(option), RoundedCornerShape(4.dp)).border(1.dp, Color.Gray, RoundedCornerShape(4.dp)))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(option)
                             }
-                        } else {
-                            Text(option)
-                        }
+                        } else { Text(option) }
                     },
-                    onClick = {
-                        onValueSelected(option)
-                        expanded = false
-                    }
+                    onClick = { onValueSelected(option); expanded = false }
                 )
             }
         }
@@ -880,91 +807,41 @@ fun DropdownSelector(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterDropdown(
-    label: String,
-    options: List<String>,
-    selectedValue: String?,
-    onValueSelected: (String?) -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun FilterDropdown(label: String, options: List<String>, selectedValue: String?, onValueSelected: (String?) -> Unit, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorFilter = label == "Color" || label == "Color"
+    val isColorFilter = label == "Color"
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded }
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
             value = selectedValue ?: "All",
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
-            modifier = modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            modifier = modifier.fillMaxWidth().menuAnchor(),
             trailingIcon = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isColorFilter && selectedValue != null) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .background(
-                                    color = getColorFromName(selectedValue),
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
-                        )
-
+                        Box(modifier = Modifier.size(20.dp).background(getColorFromName(selectedValue), RoundedCornerShape(4.dp)).border(1.dp, Color.Gray, RoundedCornerShape(4.dp)))
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 }
             }
         )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("All") },
-                onClick = {
-                    onValueSelected(null)
-                    expanded = false
-                }
-            )
-
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(text = { Text("All") }, onClick = { onValueSelected(null); expanded = false })
             options.forEach { option ->
                 DropdownMenuItem(
                     text = {
                         if (isColorFilter) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .background(
-                                            color = getColorFromName(option),
-                                            shape = RoundedCornerShape(4.dp)
-                                        )
-                                        .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
-                                )
-
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(20.dp).background(getColorFromName(option), RoundedCornerShape(4.dp)).border(1.dp, Color.Gray, RoundedCornerShape(4.dp)))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(option)
                             }
-                        } else {
-                            Text(option)
-                        }
+                        } else { Text(option) }
                     },
-                    onClick = {
-                        onValueSelected(option)
-                        expanded = false
-                    }
+                    onClick = { onValueSelected(option); expanded = false }
                 )
             }
         }

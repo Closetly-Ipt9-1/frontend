@@ -30,6 +30,9 @@ android {
         val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
         buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
 
+        val openWeatherKey = project.findProperty("OPENWEATHER_API_KEY") as String? ?: ""
+        buildConfigField("String", "OPENWEATHER_API_KEY", "\"$openWeatherKey\"")
+
         val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
             .orElse(providers.environmentVariable("GOOGLE_WEB_CLIENT_ID"))
             .getOrElse("348676947644-d9vd90dcp88jddraqe8gqs3ps1a55m7o.apps.googleusercontent.com")
@@ -61,6 +64,7 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
 }
 
 dependencies {
@@ -83,11 +87,15 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
+    implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
@@ -95,6 +103,7 @@ dependencies {
     implementation("com.android.billingclient:billing:8.3.0")
     implementation("com.google.android.gms:play-services-ads:24.0.0")
 }
+
 
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest")
