@@ -65,6 +65,7 @@ fun ClosetScreen() {
     var brand by remember { mutableStateOf("") }
     var size by remember { mutableStateOf("") }
     var purchaseLink by remember { mutableStateOf("") }
+    var purchaseLinkError by remember { mutableStateOf(false) }
     var selectedOccasion by remember { mutableStateOf<String?>(null) }
     var selectedStyle by remember { mutableStateOf<String?>(null) }
 
@@ -74,6 +75,7 @@ fun ClosetScreen() {
     var editBrand by remember { mutableStateOf("") }
     var editSize by remember { mutableStateOf("") }
     var editPurchaseLink by remember { mutableStateOf("") }
+    var editPurchaseLinkError by remember { mutableStateOf(false) }
     var editOccasion by remember { mutableStateOf<String?>(null) }
     var editStyle by remember { mutableStateOf<String?>(null) }
 
@@ -104,7 +106,7 @@ fun ClosetScreen() {
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Style Tipp",
+                        text = "Style Tip",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -146,7 +148,7 @@ fun ClosetScreen() {
                     onClick = { showShoppingPopup = false },
                     shape = MaterialTheme.shapes.large
                 ) {
-                    Text("Später")
+                    Text("Later")
                 }
             }
         )
@@ -155,7 +157,7 @@ fun ClosetScreen() {
 
     val categoryOptions = listOf("Jacket", "Pants", "Pullover", "Shirt", "Shoes", "Watch")
     val colorOptions = listOf("Black", "White", "Blue", "Red", "Green", "Gray", "Beige", "Yellow", "Orange", "Violet", "Purple")
-    val brandOptions = listOf("Nike", "Adidas", "Zara", "H&M", "Puma", "Levi's", "Ralph Lauren", "Jack&Jones", "Louis Vuitton", "Gucci", "Prada")
+    val brandOptions = listOf("No Brand", "Nike", "Adidas", "Zara", "H&M", "Puma", "Levi's", "Ralph Lauren", "Jack&Jones", "Louis Vuitton", "Gucci", "Prada")
     val sizeOptions = listOf("XS", "S", "M", "L", "XL", "XXL")
 
     val launcher = rememberLauncherForActivityResult(
@@ -184,7 +186,7 @@ fun ClosetScreen() {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Schrank",
+                        text = "Closet",
                         style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
@@ -194,7 +196,7 @@ fun ClosetScreen() {
                         shape = MaterialTheme.shapes.large
                     ) {
                         Text(
-                            text = "${filteredClothes.size} Teile gefunden",
+                            text = "${filteredClothes.size} items found",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
@@ -218,12 +220,12 @@ fun ClosetScreen() {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Kleidung hinzufügen",
+                            text = "Add clothing",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Foto hochladen und direkt Kategorie, Farbe, Marke und Größe setzen.",
+                            text = "Upload a photo and set category, color, brand, and size right away.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -234,7 +236,7 @@ fun ClosetScreen() {
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Hinzufügen")
+                        Text("Add")
                     }
                 }
             }
@@ -261,21 +263,55 @@ fun ClosetScreen() {
                             contentScale = ContentScale.Crop
                         )
 
-                        DropdownSelector(label = "Kategorie", options = categoryOptions, selectedValue = category, onValueSelected = { category = it })
-                        DropdownSelector(label = "Farbe", options = colorOptions, selectedValue = color, onValueSelected = { color = it })
-                        DropdownSelector(label = "Marke", options = brandOptions, selectedValue = brand, onValueSelected = { brand = it })
-                        DropdownSelector(label = "Größe", options = sizeOptions, selectedValue = size, onValueSelected = { size = it })
+                        DropdownSelector(
+                            label = "Category",
+                            options = categoryOptions,
+                            selectedValue = category,
+                            onValueSelected = { category = it }
+                        )
+
+                        DropdownSelector(
+                            label = "Color",
+                            options = colorOptions,
+                            selectedValue = color,
+                            onValueSelected = { color = it }
+                        )
+
+                        DropdownSelector(
+                            label = "Brand",
+                            options = brandOptions,
+                            selectedValue = brand,
+                            onValueSelected = { brand = it }
+                        )
+
+                        DropdownSelector(
+                            label = "Size",
+                            options = sizeOptions,
+                            selectedValue = size,
+                            onValueSelected = { size = it }
+                        )
 
                         OutlinedTextField(
                             value = purchaseLink,
-                            onValueChange = { purchaseLink = it },
-                            label = { Text("Kauflink (optional)") },
+                            onValueChange = {
+                                purchaseLink = it
+                                purchaseLinkError = it.isNotBlank() && !android.util.Patterns.WEB_URL.matcher(it).matches()
+                            },
+                            label = { Text("Purchase link (optional)") },
                             placeholder = { Text("https://...") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            isError = purchaseLinkError,
+                            supportingText = if (purchaseLinkError) {
+                                { Text("Please enter a valid link (e.g. https://...)") }
+                            } else null
                         )
 
-                        Text(text = "Anlass", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "Occasion",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(PredefinedTags.OCCASION) { tag ->
                                 FilterChip(
@@ -286,7 +322,11 @@ fun ClosetScreen() {
                             }
                         }
 
-                        Text(text = "Stil", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "Style",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(PredefinedTags.STYLE) { tag ->
                                 FilterChip(
@@ -297,9 +337,17 @@ fun ClosetScreen() {
                             }
                         }
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Button(
-                                enabled = !isBusy && category.isNotBlank() && color.isNotBlank() && brand.isNotBlank() && size.isNotBlank(),
+                                enabled = !isBusy &&
+                                        category.isNotBlank() &&
+                                        color.isNotBlank() &&
+                                        brand.isNotBlank() &&
+                                        size.isNotBlank() &&
+                                        !purchaseLinkError,
                                 onClick = {
                                     val uri = selectedImageUri ?: return@Button
                                     val combinedTags = listOfNotNull(selectedOccasion, selectedStyle)
@@ -315,21 +363,40 @@ fun ClosetScreen() {
                                         style = styleValue,
                                         tags = combinedTags
                                     )
-                                    selectedImageUri = null; category = ""; color = ""; brand = ""; size = ""; purchaseLink = ""; selectedOccasion = null; selectedStyle = null
+
+                                    selectedImageUri = null
+                                    category = ""
+                                    color = ""
+                                    brand = ""
+                                    size = ""
+                                    purchaseLink = ""
+                                    purchaseLinkError = false
+                                    selectedOccasion = null
+                                    selectedStyle = null
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Speichern")
+                                Text("Save")
                             }
                             OutlinedButton(
-                                onClick = { selectedImageUri = null; category = ""; color = ""; brand = ""; size = ""; purchaseLink = ""; selectedOccasion = null; selectedStyle = null },
+                                onClick = {
+                                    selectedImageUri = null
+                                    category = ""
+                                    color = ""
+                                    brand = ""
+                                    size = ""
+                                    purchaseLink = ""
+                                    purchaseLinkError = false
+                                    selectedOccasion = null
+                                    selectedStyle = null
+                                },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(Icons.Default.Close, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Abbrechen")
+                                Text("Cancel")
                             }
                         }
                     }
@@ -343,28 +410,59 @@ fun ClosetScreen() {
                 shape = MaterialTheme.shapes.extraLarge,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Kategorien & Filter", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Category & Filter",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
 
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item { ClosetFilterChip(label = "Alle", isSelected = selectedCategory == null, onClick = { viewModel.setSelectedCategory(null) }) }
+                        item {
+                            ClosetFilterChip(
+                                label = "All",
+                                isSelected = selectedCategory == null,
+                                onClick = { viewModel.setSelectedCategory(null) }
+                            )
+                        }
                         items(categoryOptions) { option ->
-                            ClosetFilterChip(label = option, isSelected = selectedCategory == option, onClick = { viewModel.setSelectedCategory(if (selectedCategory == option) null else option) })
+                            ClosetFilterChip(
+                                label = option,
+                                isSelected = selectedCategory == option,
+                                onClick = { viewModel.setSelectedCategory(if (selectedCategory == option) null else option) }
+                            )
                         }
                     }
 
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item { ClosetFilterChip(label = "Alle Farben", isSelected = selectedColor == null, onClick = { viewModel.setSelectedColor(null) }) }
+                        item {
+                            ClosetFilterChip(
+                                label = "All Colors",
+                                isSelected = selectedColor == null,
+                                onClick = { viewModel.setSelectedColor(null) }
+                            )
+                        }
                         items(colorOptions.take(7)) { option ->
-                            ClosetColorChip(label = option, isSelected = selectedColor == option, onClick = { viewModel.setSelectedColor(if (selectedColor == option) null else option) })
+                            ClosetColorChip(
+                                label = option,
+                                isSelected = selectedColor == option,
+                                onClick = { viewModel.setSelectedColor(if (selectedColor == option) null else option) }
+                            )
                         }
                     }
 
                     FilterDropdown(label = "Brand", options = brandOptions, selectedValue = selectedBrand, onValueSelected = { viewModel.setSelectedBrand(it) })
                     FilterDropdown(label = "Size", options = sizeOptions, selectedValue = selectedSize, onValueSelected = { viewModel.setSelectedSize(it) })
 
-                    OutlinedButton(onClick = { viewModel.clearFilters() }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-                        Text("Filter zurücksetzen")
+                    OutlinedButton(
+                        onClick = { viewModel.clearFilters() },
+                        shape = MaterialTheme.shapes.large,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Reset filters")
                     }
                 }
             }
@@ -395,14 +493,25 @@ fun ClosetScreen() {
 
                         OutlinedTextField(
                             value = editPurchaseLink,
-                            onValueChange = { editPurchaseLink = it },
-                            label = { Text("Kauflink (optional)") },
+                            onValueChange = {
+                                editPurchaseLink = it
+                                editPurchaseLinkError = it.isNotBlank() && !android.util.Patterns.WEB_URL.matcher(it).matches()
+                            },
+                            label = { Text("Purchase link (optional)") },
                             placeholder = { Text("https://...") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            isError = editPurchaseLinkError,
+                            supportingText = if (editPurchaseLinkError) {
+                                { Text("Please enter a valid link (e.g. https://...)") }
+                            } else null
                         )
 
-                        Text(text = "Anlass", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "Occasion",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(PredefinedTags.OCCASION) { tag ->
                                 FilterChip(
@@ -413,7 +522,11 @@ fun ClosetScreen() {
                             }
                         }
 
-                        Text(text = "Stil", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "Style",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(PredefinedTags.STYLE) { tag ->
                                 FilterChip(
@@ -426,7 +539,12 @@ fun ClosetScreen() {
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
-                                enabled = !isBusy && editCategory.isNotBlank() && editColor.isNotBlank() && editBrand.isNotBlank() && editSize.isNotBlank(),
+                                enabled = !isBusy &&
+                                        editCategory.isNotBlank() &&
+                                        editColor.isNotBlank() &&
+                                        editBrand.isNotBlank() &&
+                                        editSize.isNotBlank() &&
+                                        !editPurchaseLinkError,
                                 onClick = {
                                     val itemId = editingItemId ?: return@Button
                                     val combinedTags = listOfNotNull(editOccasion, editStyle)
@@ -441,13 +559,21 @@ fun ClosetScreen() {
                                         style = styleValue,
                                         tags = combinedTags
                                     )
-                                    editingItemId = null; editOccasion = null; editStyle = null
+                                    editingItemId = null
+                                    editPurchaseLinkError = false
+                                    editOccasion = null
+                                    editStyle = null
                                 },
                                 modifier = Modifier.weight(1f)
                             ) { Text("Save") }
 
                             OutlinedButton(
-                                onClick = { editingItemId = null; editOccasion = null; editStyle = null },
+                                onClick = {
+                                    editingItemId = null
+                                    editPurchaseLinkError = false
+                                    editOccasion = null
+                                    editStyle = null
+                                },
                                 modifier = Modifier.weight(1f)
                             ) { Text("Cancel") }
                         }
@@ -460,7 +586,7 @@ fun ClosetScreen() {
             if (filteredClothes.isEmpty()) {
                 Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
                     Text(
-                        text = "Noch keine Kleidung gefunden. Füge oben dein erstes Teil hinzu.",
+                        text = "No clothing found yet. Add your first item above.",
                         modifier = Modifier.padding(18.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -485,6 +611,7 @@ fun ClosetScreen() {
                                 editBrand = item.brand ?: ""
                                 editSize = item.size ?: ""
                                 editPurchaseLink = item.purchaseLink ?: ""
+                                editPurchaseLinkError = false
                                 editOccasion = item.tags.firstOrNull { it.startsWith("occasion_") }
                                 editStyle = item.tags.firstOrNull { it.startsWith("style_") }
                             },
@@ -554,9 +681,27 @@ private fun ClosetGridItemCard(item: ClothingItemUi, onEdit: () -> Unit, onDelet
                 ) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.White, modifier = Modifier.size(18.dp))
                 }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    DropdownMenuItem(text = { Text("Bearbeiten") }, leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }, onClick = { onEdit(); expanded = false })
-                    DropdownMenuItem(text = { Text("Löschen") }, leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }, onClick = { onDelete(); expanded = false })
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        onClick = {
+                            onEdit()
+                            expanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        onClick = {
+                            onDelete()
+                            expanded = false
+                        }
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -566,7 +711,7 @@ private fun ClosetGridItemCard(item: ClothingItemUi, onEdit: () -> Unit, onDelet
                     Box(modifier = Modifier.size(10.dp).background(getColorFromName(it), CircleShape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
                 }
                 Text(
-                    text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "Keine Details" },
+                    text = listOfNotNull(item.brand, item.color, item.size).joinToString(" | ").ifBlank { "No details" },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
@@ -622,7 +767,7 @@ fun ClothingItemCard(item: ClothingItemUi, onEdit: () -> Unit, onDelete: () -> U
 @Composable
 fun DropdownSelector(label: String, options: List<String>, selectedValue: String, onValueSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorSelector = label == "Color" || label == "Farbe"
+    val isColorSelector = label == "Color"
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
@@ -664,7 +809,7 @@ fun DropdownSelector(label: String, options: List<String>, selectedValue: String
 @Composable
 fun FilterDropdown(label: String, options: List<String>, selectedValue: String?, onValueSelected: (String?) -> Unit, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
-    val isColorFilter = label == "Color" || label == "Farbe"
+    val isColorFilter = label == "Color"
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(

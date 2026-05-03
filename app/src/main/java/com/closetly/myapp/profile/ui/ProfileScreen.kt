@@ -92,7 +92,7 @@ fun ProfileScreen(
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val displayName = user?.displayName?.takeIf { it.isNotBlank() } ?: "Closetly User"
-    val email = user?.email ?: "Keine E-Mail"
+    val email = user?.email ?: "No email"
 
     fun uploadProfileImage(selectedImageUri: Uri) {
         val currentUser = auth.currentUser ?: return
@@ -153,7 +153,7 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Text(
-            text = "Profil",
+            text = "Profile",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold
         )
@@ -190,13 +190,13 @@ fun ProfileScreen(
     if (showSourceDialog) {
         AlertDialog(
             onDismissRequest = { showSourceDialog = false },
-            title = { Text("Profilbild auswählen") },
-            text = { Text("Wähle ein Bild aus der Galerie oder nimm direkt ein neues Foto auf.") },
+            title = { Text("Choose profile picture") },
+            text = { Text("Choose an image from your gallery or take a new photo.") },
             confirmButton = {
                 TextButton(onClick = {
                     showSourceDialog = false
                     imagePickerLauncher.launch("image/*")
-                }) { Text("Galerie") }
+                }) { Text("Gallery") }
             },
             dismissButton = {
                 TextButton(onClick = {
@@ -204,7 +204,7 @@ fun ProfileScreen(
                     val newImageUri = createImageUri(context)
                     cameraImageUri = newImageUri
                     cameraLauncher.launch(newImageUri)
-                }) { Text("Kamera") }
+                }) { Text("Camera") }
             }
         )
     }
@@ -215,18 +215,18 @@ fun ProfileScreen(
                 showPreviewDialog = false
                 pendingImageUri = null
             },
-            title = { Text("Bild bestätigen") },
+            title = { Text("Confirm image") },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AsyncImage(
                         model = pendingImageUri,
-                        contentDescription = "Vorschau Profilbild",
+                        contentDescription = "Profile picture preview",
                         modifier = Modifier
                             .size(220.dp)
                             .clip(CircleShape)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Möchtest du dieses Bild als Profilbild verwenden?")
+                    Text("Use this image as your profile picture?")
                 }
             },
             confirmButton = {
@@ -234,13 +234,13 @@ fun ProfileScreen(
                     val uri = pendingImageUri
                     showPreviewDialog = false
                     if (uri != null) uploadProfileImage(uri)
-                }) { Text("Bestätigen") }
+                }) { Text("Confirm") }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showPreviewDialog = false
                     pendingImageUri = null
-                }) { Text("Abbrechen") }
+                }) { Text("Cancel") }
             }
         )
     }
@@ -301,7 +301,7 @@ private fun ProfileHero(
                 contentColor = if (isPremium) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondaryContainer
             ) {
                 Text(
-                    text = if (isPremium) "Premium aktiv" else "Free Account",
+                    text = if (isPremium) "Premium active" else "Free Account",
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
@@ -328,7 +328,7 @@ private fun ProfilePhoto(
             if (!photoUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = photoUrl,
-                    contentDescription = "Profilbild",
+                    contentDescription = "Profile picture",
                     modifier = Modifier
                         .size(118.dp)
                         .clip(CircleShape)
@@ -357,7 +357,7 @@ private fun ProfilePhoto(
         ) {
             Icon(
                 imageVector = Icons.Default.Edit,
-                contentDescription = "Profilbild ändern",
+                contentDescription = "Change profile picture",
                 modifier = Modifier
                     .padding(10.dp)
                     .size(18.dp)
@@ -382,7 +382,7 @@ private fun ProfileStatsRow(
         )
         ProfileStatTile(
             label = "Avatar",
-            value = if (hasAvatar) "Bereit" else "Offen",
+            value = if (hasAvatar) "Ready" else "Open",
             modifier = Modifier.weight(1f)
         )
         ProfileStatTile(
@@ -445,13 +445,13 @@ private fun AvatarPanel(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = if (avatar == null) "Avatar erstellen" else "Avatar bearbeiten",
+                    text = if (avatar == null) "Create avatar" else "Edit avatar",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = if (avatar == null) {
-                        "Baue deinen Closetly-Look für dein Profil."
+                        "Build your Closetly look for your profile."
                     } else {
                         avatar.summaryText()
                     },
@@ -462,7 +462,7 @@ private fun AvatarPanel(
                     onClick = if (avatar == null) onCreateAvatarClick else onCustomizeAvatarClick,
                     shape = MaterialTheme.shapes.large
                 ) {
-                    Text(if (avatar == null) "Jetzt erstellen" else "Anpassen")
+                    Text(if (avatar == null) "Create now" else "Customize")
                 }
             }
         }
@@ -480,15 +480,15 @@ private fun ProfileActionsPanel(
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ProfileActionTile(
-                title = "Bearbeiten",
-                subtitle = "Name und Details",
+                title = "Edit",
+                subtitle = "Name and details",
                 icon = Icons.Default.Edit,
                 modifier = Modifier.weight(1f),
                 onClick = onEditClick
             )
             ProfileActionTile(
-                title = "Gespeichert",
-                subtitle = "Outfits ansehen",
+                title = "Saved",
+                subtitle = "View outfits",
                 icon = Icons.Default.CheckCircle,
                 modifier = Modifier.weight(1f),
                 onClick = onSavedOutfitsClick
@@ -497,7 +497,7 @@ private fun ProfileActionsPanel(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ProfileActionTile(
                 title = if (isPremium) "Premium" else "Upgrade",
-                subtitle = if (isPremium) "Abo verwalten" else "Mehr Features",
+                subtitle = if (isPremium) "Manage subscription" else "More features",
                 icon = Icons.Default.CheckCircle,
                 modifier = Modifier.weight(1f),
                 highlighted = true,
@@ -505,7 +505,7 @@ private fun ProfileActionsPanel(
             )
             ProfileActionTile(
                 title = "Logout",
-                subtitle = "Abmelden",
+                subtitle = "Log out",
                 icon = Icons.Default.ExitToApp,
                 modifier = Modifier.weight(1f),
                 danger = true,
@@ -647,11 +647,26 @@ private fun DefaultAvatarPreview(avatar: Avatar, size: Int = 120) {
 
 private fun Avatar.summaryText(): String {
     val parts = listOfNotNull(
-        gender?.takeIf { it.isNotBlank() },
-        skinColor?.takeIf { it.isNotBlank() }?.let { "Haut: $it" },
-        hairColor?.takeIf { it.isNotBlank() }?.let { "Haar: $it" }
+        gender?.takeIf { it.isNotBlank() }?.let { it.toAvatarLabel() },
+        skinColor?.takeIf { it.isNotBlank() }?.let { "Skin: ${it.toAvatarLabel()}" },
+        hairColor?.takeIf { it.isNotBlank() }?.let { "Hair: ${it.toAvatarLabel()}" }
     )
-    return parts.joinToString(" · ").ifBlank { "Dein Avatar ist bereit." }
+    return parts.joinToString(" · ").ifBlank { "Your avatar is ready." }
+}
+
+private fun String.toAvatarLabel(): String = when (this) {
+    "männlich", "male" -> "Male"
+    "weiblich", "female" -> "Female"
+    "hell" -> "Light"
+    "mittel" -> "Medium"
+    "dunkel" -> "Dark"
+    "hellblond" -> "Light blonde"
+    "dunkelblond" -> "Dark blonde"
+    "hellbraun" -> "Light brown"
+    "kastanienbraun" -> "Chestnut brown"
+    "dunkelbraun" -> "Dark brown"
+    "schwarz" -> "Black"
+    else -> replaceFirstChar { it.uppercase() }
 }
 
 private fun createImageUri(context: Context): Uri {

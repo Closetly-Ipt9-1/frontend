@@ -129,7 +129,10 @@ data class OutfitComment(
 )
 
 @Composable
-fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
+fun ExploreScreen(
+    showAds: Boolean = false,
+    onOutfitClick: (String) -> Unit = {}
+) {
     val firestore = remember { FirebaseFirestore.getInstance() }
     val context = LocalContext.current
     val currentUserId = AuthManager.getCurrentUserId()
@@ -169,7 +172,13 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
         seedPlaceholderOutfitsIfNeeded(firestore)
     }
 
-    LaunchedEffect(context, nativeAdUnitId) {
+    LaunchedEffect(context, nativeAdUnitId, showAds) {
+        if (!showAds) {
+            preloadedNativeAds.forEach { it.destroy() }
+            preloadedNativeAds.clear()
+            return@LaunchedEffect
+        }
+
         preloadNativeAds(
             context = context,
             adUnitId = nativeAdUnitId,
@@ -296,7 +305,7 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                 if (displayedOutfits.isEmpty()) {
                     item {
                         Text(
-                            text = "Keine Outfits für die ausgewählten Tags.",
+                            text = "No outfits for the selected tags.",
                             modifier = Modifier.padding(vertical = 16.dp),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -319,7 +328,7 @@ fun ExploreScreen(onOutfitClick: (String) -> Unit = {}) {
                         }
                     )
 
-                    if (shouldShowAdAfterOutfit(index)) {
+                    if (showAds && shouldShowAdAfterOutfit(index)) {
                         val adSlotIndex = adSlotIndexAfterOutfit(index)
                         NativeAdCard(
                             preloadedAd = preloadedNativeAds.getOrNull(adSlotIndex),
@@ -804,7 +813,7 @@ fun ExploreOutfitCard(
 
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
-                    text = outfit.caption.ifBlank { "Ohne Beschreibung" },
+                    text = outfit.caption.ifBlank { "No description" },
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (outfit.caption.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
@@ -839,7 +848,7 @@ fun ExploreOutfitCard(
 
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (comments.isEmpty()) "Kommentare" else "${comments.size} Kommentar${if (comments.size != 1) "e" else ""}",
+                    text = if (comments.isEmpty()) "Comments" else "${comments.size} Comment${if (comments.size != 1) "s" else ""}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -858,7 +867,7 @@ fun ExploreOutfitCard(
                         }
                         if (comments.size > 5) {
                             Text(
-                                text = if (showAllComments) "Weniger anzeigen" else "Weitere ${comments.size - 5} Kommentare anzeigen",
+                                text = if (showAllComments) "Show less" else "Show ${comments.size - 5} more comments",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(vertical = 4.dp).clickable { showAllComments = !showAllComments }

@@ -18,7 +18,7 @@ object RembgApiHelper {
         onError: (String) -> Unit
     ) {
         if (apiKey.isBlank()) {
-            onError("API Key fehlt. Prüfe RMBG_API_KEY in gradle.properties")
+            onError("API key missing. Check RMBG_API_KEY in gradle.properties")
             return
         }
 

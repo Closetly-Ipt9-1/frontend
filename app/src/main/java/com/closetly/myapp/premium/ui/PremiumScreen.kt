@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
@@ -60,7 +61,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun PremiumScreen(viewModel: PremiumViewModel = viewModel()) {
+fun PremiumScreen(onBack: () -> Unit = {}, viewModel: PremiumViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -104,6 +105,18 @@ fun PremiumScreen(viewModel: PremiumViewModel = viewModel()) {
             onRefresh = viewModel::refresh,
             onDismissMessage = viewModel::clearMessage
         )
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 8.dp, start = 4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White
+            )
+        }
     }
 }
 
@@ -240,11 +253,13 @@ private fun PlanCard(
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "Billed by Google Play",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.68f)
-                    )
+                    if (offer != null) {
+                        Text(
+                            text = "Google Play price: ${offer.formattedPrice}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.68f)
+                        )
+                    }
                 }
 
                 Button(

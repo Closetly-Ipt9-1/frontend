@@ -66,12 +66,12 @@ fun FitCreatorScreen() {
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "Outfits erstellen",
+                text = "Create outfits",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Kombiniere deine Kleidung digital und speichere fertige Looks.",
+                text = "Combine your clothes digitally and save finished looks.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -487,7 +487,7 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
 
         item { Text("Kleidung auswählen", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold) }
 
-        if (isFetchingItems) {
+        if (isLoadingItems) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }

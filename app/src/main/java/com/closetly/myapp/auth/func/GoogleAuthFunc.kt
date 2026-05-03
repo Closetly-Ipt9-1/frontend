@@ -26,14 +26,9 @@ class GoogleAuthFunc(
             .addCredentialOption(googleIdOption)
             .build()
 
-        val credential = try {
-            CredentialManager.create(context)
-                .getCredential(context = context, request = request)
-                .credential
-        } catch (exception: Exception) {
-            Log.w(TAG, "signInWithGoogle:getCredentialFailure", exception)
-            throw exception
-        }
+        val credential = CredentialManager.create(context)
+            .getCredential(context = context, request = request)
+            .credential
 
         check(
             credential is CustomCredential &&
@@ -48,15 +43,16 @@ class GoogleAuthFunc(
             )
             auth.signInWithCredential(firebaseCredential).await()
             Log.d(TAG, "signInWithGoogle:success")
+        } catch (exception: GoogleIdTokenParsingException) {
+            logAndRethrow("signInWithGoogle:invalidToken", exception)
         } catch (exception: Exception) {
-            val message = if (exception is GoogleIdTokenParsingException) {
-                "signInWithGoogle:invalidToken"
-            } else {
-                "signInWithGoogle:firebaseFailure"
-            }
-            Log.w(TAG, message, exception)
-            throw exception
+            logAndRethrow("signInWithGoogle:firebaseFailure", exception)
         }
+    }
+
+    private fun logAndRethrow(message: String, exception: Exception): Nothing {
+        Log.w(TAG, message, exception)
+        throw exception
     }
 
     companion object {

@@ -223,7 +223,7 @@ class FitCreatorViewModel : ViewModel() {
             return
         }
         if (hasConflictingCategory(currentItems, item)) {
-            _errorMessage.value = "Sie können nicht gleichzeitig ${item.category} und ein anderes Oberteil wählen"
+            _errorMessage.value = "You cannot select ${item.category} and another top at the same time"
             return
         }
         _selectedItems.value = currentItems + item
@@ -254,7 +254,7 @@ class FitCreatorViewModel : ViewModel() {
         onError: (String) -> Unit
     ) {
         if (!validateOutfit()) {
-            onError("Bitte wählen Sie mindestens eine Hose und ein Oberteil")
+            onError("Please select at least one pair of pants and one top")
             return
         }
 

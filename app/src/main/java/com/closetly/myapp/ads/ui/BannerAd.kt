@@ -84,7 +84,7 @@ fun BannerAd(
 
         if (loadState != AdLoadState.Loaded) {
             Text(
-                text = "Anzeige",
+                text = "Ad",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
