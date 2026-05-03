@@ -48,3 +48,4 @@ build/
 # APK files
 *.apk
 *.aab
+local.properties
