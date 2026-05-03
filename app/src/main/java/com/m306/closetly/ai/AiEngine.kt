@@ -34,7 +34,6 @@ private val STYLE_COMPATIBILITY: Map<String, List<String>> = mapOf(
     "style_business"   to listOf("style_business", "occasion_work", "occasion_formal", "style_classic")
 )
 
-// Category mapping — ClosetScreen uses German labels, AI uses English keys
 private fun normalizeCategory(category: String): String = when (category.lowercase().trim()) {
     "jacket"   -> "jacket"
     "pants"    -> "bottom"
@@ -66,6 +65,9 @@ object AiEngine {
 
         if (tops.isEmpty() || bottoms.isEmpty()) return null
 
+        // Jacket nur bei Winter und Herbst
+        val includeJacket = season == Season.WINTER || season == Season.AUTUMN
+
         var bestOutfit: GeneratedOutfit? = null
         var highestScore = -1
 
@@ -81,11 +83,13 @@ object AiEngine {
                         SeasonEngine.seasonColorBonus(bottomColor, season) +
                         SeasonEngine.seasonStyleBonus(topStyle, season)
 
-                val bestJacket = jackets.maxByOrNull {
-                    scoreColorMatch(it.color.orEmpty(), topColor) +
-                            SeasonEngine.seasonColorBonus(it.color.orEmpty(), season) +
-                            SeasonEngine.seasonCategoryBonus("jacket", season)
-                }
+                val bestJacket = if (includeJacket) {
+                    jackets.maxByOrNull {
+                        scoreColorMatch(it.color.orEmpty(), topColor) +
+                                SeasonEngine.seasonColorBonus(it.color.orEmpty(), season) +
+                                SeasonEngine.seasonCategoryBonus("jacket", season)
+                    }
+                } else null
 
                 val bestShoes = shoes.maxByOrNull {
                     scoreColorMatch(it.color.orEmpty(), bottomColor) +
@@ -101,18 +105,14 @@ object AiEngine {
                     scoreColorMatch(it.color.orEmpty(), bottomColor)
                 } ?: 0
 
-                val shouldIncludeJacket = season != Season.SUMMER ||
-                        (jacketScore + SeasonEngine.seasonCategoryBonus("jacket", season)) > 0
-
-                val totalScore = baseScore + shoesScore +
-                        if (shouldIncludeJacket) jacketScore else 0
+                val totalScore = baseScore + shoesScore + jacketScore
 
                 if (totalScore > highestScore) {
                     highestScore = totalScore
                     bestOutfit = GeneratedOutfit(
                         top    = top,
                         bottom = bottom,
-                        jacket = if (shouldIncludeJacket) bestJacket else null,
+                        jacket = bestJacket,
                         shoes  = bestShoes,
                         score  = totalScore
                     )
@@ -127,12 +127,15 @@ object AiEngine {
         count: Int = 3,
         season: Season = SeasonEngine.currentSeason()
     ): List<GeneratedOutfit> {
-        val tops    = clothes.filter { normalizeCategory(it.category) == "top" }
-        val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }
+        val tops    = clothes.filter { normalizeCategory(it.category) == "top" }.shuffled()
+        val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }.shuffled()
         val jackets = clothes.filter { normalizeCategory(it.category) == "jacket" }
         val shoes   = clothes.filter { normalizeCategory(it.category) == "shoes" }
 
         if (tops.isEmpty() || bottoms.isEmpty()) return emptyList()
+
+        // Jacket nur bei Winter und Herbst
+        val includeJacket = season == Season.WINTER || season == Season.AUTUMN
 
         val allCombinations = mutableListOf<GeneratedOutfit>()
 
@@ -148,23 +151,22 @@ object AiEngine {
                         SeasonEngine.seasonColorBonus(bottomColor, season) +
                         SeasonEngine.seasonStyleBonus(topStyle, season)
 
-                val bestJacket = jackets.maxByOrNull {
-                    scoreColorMatch(it.color.orEmpty(), topColor) +
-                            SeasonEngine.seasonCategoryBonus("jacket", season)
-                }
+                val bestJacket = if (includeJacket) {
+                    jackets.maxByOrNull {
+                        scoreColorMatch(it.color.orEmpty(), topColor) +
+                                SeasonEngine.seasonCategoryBonus(it.category, season)
+                    }
+                } else null
 
                 val bestShoes = shoes.maxByOrNull {
                     scoreColorMatch(it.color.orEmpty(), bottomColor)
                 }
 
-                val includeJacket = season != Season.SUMMER ||
-                        SeasonEngine.seasonCategoryBonus("jacket", season) > 0
-
                 allCombinations.add(
                     GeneratedOutfit(
                         top    = top,
                         bottom = bottom,
-                        jacket = if (includeJacket) bestJacket else null,
+                        jacket = bestJacket,
                         shoes  = bestShoes,
                         score  = score
                     )
@@ -172,10 +174,29 @@ object AiEngine {
             }
         }
 
-        return allCombinations
-            .sortedByDescending { it.score }
-            .distinctBy { "${it.top.id}_${it.bottom.id}" }
-            .take(count)
+        val sorted = allCombinations.sortedByDescending { it.score }
+
+        // Max 1 Outfit pro Top — garantiert Variety
+        val result = mutableListOf<GeneratedOutfit>()
+        val usedTopIds = mutableSetOf<String>()
+
+        for (outfit in sorted) {
+            if (outfit.top.id !in usedTopIds) {
+                result.add(outfit)
+                usedTopIds.add(outfit.top.id)
+            }
+            if (result.size >= count) break
+        }
+
+        // Auffüllen falls nicht genug verschiedene Tops
+        if (result.size < count) {
+            for (outfit in sorted) {
+                if (outfit !in result) result.add(outfit)
+                if (result.size >= count) break
+            }
+        }
+
+        return result
     }
 
     fun scoreColorMatch(color1: String, color2: String): Int {

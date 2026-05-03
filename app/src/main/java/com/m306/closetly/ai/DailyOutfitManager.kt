@@ -3,7 +3,6 @@ package com.m306.closetly.ai
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.closetly.myapp.closet.model.ClothingItemUi
-import com.closetly.myapp.closet.data.ClosetRepository
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,7 +27,7 @@ class DailyOutfitManager {
         val userId = auth.currentUser?.uid
             ?: return DailyOutfitResult.Error("User not logged in")
 
-        val today = todayDateString()
+        val today    = todayDateString()
         val existing = loadTodayOutfit(userId, today)
         if (existing != null) return DailyOutfitResult.AlreadyExists(existing)
 
@@ -49,13 +48,63 @@ class DailyOutfitManager {
 
         val today   = todayDateString()
         val current = loadTodayOutfit(userId, today)
+        val season  = SeasonEngine.currentSeason()
 
-        val suggestions = AiEngine.generateOutfitSuggestions(clothes, count = 5)
-        val picked = suggestions.firstOrNull {
-            it.top.id != current?.top?.id || it.bottom.id != current.bottom.id
-        } ?: suggestions.firstOrNull()
-        ?: return DailyOutfitResult.Error("Could not generate a new outfit")
+        val tops    = clothes.filter { normalizeCategory(it.category) == "top" }
+        val bottoms = clothes.filter { normalizeCategory(it.category) == "bottom" }
+        val jackets = clothes.filter { normalizeCategory(it.category) == "jacket" }
+        val shoes   = clothes.filter { normalizeCategory(it.category) == "shoes" }
 
+        if (tops.isEmpty() || bottoms.isEmpty()) {
+            return DailyOutfitResult.Error("Need at least 1 top and 1 bottom")
+        }
+
+        // Jacket nur bei Winter und Herbst
+        val includeJacket = season == Season.WINTER || season == Season.AUTUMN
+
+        // Rotation Index aus Firestore laden
+        val rotationIndex = loadRotationIndex(userId, today)
+        val nextIndex     = rotationIndex + 1
+
+        // Alle Kombinationen durchrotieren
+        val totalCombinations = tops.size * bottoms.size
+        val wrappedIndex      = nextIndex % totalCombinations
+        val topIndex          = wrappedIndex % tops.size
+        val bottomIndex       = wrappedIndex / tops.size
+
+        var finalTop    = tops[topIndex]
+        val finalBottom = bottoms[bottomIndex]
+
+        // Falls gleich wie aktuell — nächsten Top nehmen
+        if (finalTop.id == current?.top?.id && finalBottom.id == current.bottom.id) {
+            finalTop = tops[(topIndex + 1) % tops.size]
+        }
+
+        val bestJacket = if (includeJacket) {
+            jackets.maxByOrNull {
+                AiEngine.scoreColorMatch(it.color.orEmpty(), finalTop.color.orEmpty()) +
+                        SeasonEngine.seasonCategoryBonus(it.category, season)
+            }
+        } else null
+
+        val bestShoes = shoes.maxByOrNull {
+            AiEngine.scoreColorMatch(it.color.orEmpty(), finalBottom.color.orEmpty())
+        }
+
+        val score = AiEngine.scoreColorMatch(finalTop.color.orEmpty(), finalBottom.color.orEmpty()) +
+                AiEngine.scoreStyleMatch(finalTop.style.orEmpty(), finalBottom.style.orEmpty()) +
+                SeasonEngine.seasonColorBonus(finalTop.color.orEmpty(), season) +
+                SeasonEngine.seasonColorBonus(finalBottom.color.orEmpty(), season)
+
+        val picked = GeneratedOutfit(
+            top    = finalTop,
+            bottom = finalBottom,
+            jacket = bestJacket,
+            shoes  = bestShoes,
+            score  = score
+        )
+
+        saveRotationIndex(userId, today, nextIndex)
         saveTodayOutfit(userId, today, picked)
         return DailyOutfitResult.Generated(picked)
     }
@@ -65,20 +114,48 @@ class DailyOutfitManager {
         return loadTodayOutfit(userId, todayDateString())
     }
 
+    private suspend fun loadRotationIndex(userId: String, date: String): Int {
+        return try {
+            val doc = db.collection("users")
+                .document(userId)
+                .collection("dailyOutfit")
+                .document(date)
+                .get()
+                .await()
+            (doc.getLong("rotationIndex") ?: 0).toInt()
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    private suspend fun saveRotationIndex(userId: String, date: String, index: Int) {
+        try {
+            db.collection("users")
+                .document(userId)
+                .collection("dailyOutfit")
+                .document(date)
+                .update("rotationIndex", index)
+                .await()
+        } catch (e: Exception) {
+            // Dokument existiert noch nicht — wird von saveTodayOutfit erstellt
+        }
+    }
+
     private suspend fun saveTodayOutfit(userId: String, date: String, outfit: GeneratedOutfit) {
         val data = mapOf(
-            "date"        to date,
-            "score"       to outfit.score,
-            "topId"       to outfit.top.id,
-            "bottomId"    to outfit.bottom.id,
-            "jacketId"    to (outfit.jacket?.id ?: ""),
-            "shoesId"     to (outfit.shoes?.id ?: ""),
-            "topData"     to outfit.top.toMap(),
-            "bottomData"  to outfit.bottom.toMap(),
-            "jacketData"  to (outfit.jacket?.toMap() ?: emptyMap<String, Any>()),
-            "shoesData"   to (outfit.shoes?.toMap() ?: emptyMap<String, Any>()),
-            "description" to AiEngine.describeOutfit(outfit),
-            "generatedAt" to System.currentTimeMillis()
+            "date"         to date,
+            "score"        to outfit.score,
+            "topId"        to outfit.top.id,
+            "bottomId"     to outfit.bottom.id,
+            "jacketId"     to (outfit.jacket?.id ?: ""),
+            "shoesId"      to (outfit.shoes?.id ?: ""),
+            "topData"      to outfit.top.toMap(),
+            "bottomData"   to outfit.bottom.toMap(),
+            "jacketData"   to (outfit.jacket?.toMap() ?: emptyMap<String, Any>()),
+            "shoesData"    to (outfit.shoes?.toMap() ?: emptyMap<String, Any>()),
+            "description"  to AiEngine.describeOutfit(outfit),
+            "generatedAt"  to System.currentTimeMillis(),
+            "rotationIndex" to 0
         )
 
         db.collection("users")
@@ -117,6 +194,16 @@ class DailyOutfitManager {
         }
     }
 
+    private fun normalizeCategory(category: String): String = when (category.lowercase().trim()) {
+        "jacket"   -> "jacket"
+        "pants"    -> "bottom"
+        "pullover" -> "top"
+        "shirt"    -> "top"
+        "shoes"    -> "shoes"
+        "watch"    -> "accessory"
+        else       -> category.lowercase().trim()
+    }
+
     private fun todayDateString(): String =
         SimpleDateFormat(DATE_FORMAT, Locale.getDefault()).format(Date())
 }
@@ -124,26 +211,26 @@ class DailyOutfitManager {
 // ── Extension functions ───────────────────────────────────────────────────────
 
 fun ClothingItemUi.toMap(): Map<String, Any?> = mapOf(
-    "id"          to id,
-    "category"    to category,
-    "imageUrl"    to imageUrl,
-    "color"       to color,
-    "brand"       to brand,
-    "size"        to size,
+    "id"           to id,
+    "category"     to category,
+    "imageUrl"     to imageUrl,
+    "color"        to color,
+    "brand"        to brand,
+    "size"         to size,
     "purchaseLink" to purchaseLink,
-    "style"       to style,
-    "tags"        to tags
+    "style"        to style,
+    "tags"         to tags
 )
 
 @Suppress("UNCHECKED_CAST")
 fun Map<*, *>.toClothingItemUi() = ClothingItemUi(
-    id          = this["id"]          as? String ?: "",
-    category    = this["category"]    as? String ?: "",
-    imageUrl    = this["imageUrl"]    as? String ?: "",
-    color       = this["color"]       as? String,
-    brand       = this["brand"]       as? String,
-    size        = this["size"]        as? String,
+    id           = this["id"]           as? String ?: "",
+    category     = this["category"]     as? String ?: "",
+    imageUrl     = this["imageUrl"]     as? String ?: "",
+    color        = this["color"]        as? String,
+    brand        = this["brand"]        as? String,
+    size         = this["size"]         as? String,
     purchaseLink = this["purchaseLink"] as? String,
-    style       = this["style"]       as? String,
-    tags        = (this["tags"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+    style        = this["style"]        as? String,
+    tags         = (this["tags"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
 )

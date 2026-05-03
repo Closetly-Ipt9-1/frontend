@@ -36,7 +36,7 @@ import com.m306.closetly.ai.SeasonEngine
 
 @Composable
 fun FitCreatorScreen() {
-    val viewModel = remember { FitCreatorViewModel() }
+    val viewModel: FitCreatorViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val closetRepository = remember { ClosetRepository() }
     var selectedTab by remember { mutableIntStateOf(0) }
 

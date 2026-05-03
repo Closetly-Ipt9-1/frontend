@@ -27,11 +27,9 @@ class FitCreatorViewModel : ViewModel() {
     private val dailyOutfitManager      = DailyOutfitManager()
 
     companion object {
-        // In-memory cache — survives tab switches, cleared only on full app kill
         private var cachedWardrobe: List<ClothingItemUi>? = null
     }
 
-    // ── Existing state ────────────────────────────────────────────────────────
     private val _selectedItems = MutableStateFlow<List<ClothingItemUi>>(emptyList())
     val selectedItems: StateFlow<List<ClothingItemUi>> = _selectedItems
 
@@ -61,7 +59,6 @@ class FitCreatorViewModel : ViewModel() {
         initialValue = emptyList()
     )
 
-    // ── AI state ──────────────────────────────────────────────────────────────
     private val _dailyOutfit = MutableStateFlow<GeneratedOutfit?>(null)
     val dailyOutfit: StateFlow<GeneratedOutfit?> = _dailyOutfit
 
@@ -76,19 +73,15 @@ class FitCreatorViewModel : ViewModel() {
 
     private val _wardrobeItems = MutableStateFlow<List<ClothingItemUi>>(emptyList())
 
-    // ── Init ──────────────────────────────────────────────────────────────────
     init {
         loadWardrobeAndGenerateAi()
     }
 
     private fun loadWardrobeAndGenerateAi() {
-        // Cache hit — instant, no Firestore call
         val cached = cachedWardrobe
         if (cached != null) {
             _wardrobeItems.value = cached
-            // Suggestions are pure computation — run immediately
             generateSuggestions(cached)
-            // Daily outfit needs Firestore check — run in background
             viewModelScope.launch {
                 generateDailyOutfit(cached)
                 _aiLoading.value = false
@@ -96,15 +89,12 @@ class FitCreatorViewModel : ViewModel() {
             return
         }
 
-        // Cache miss — load from Firestore
         _aiLoading.value = true
         closetRepository.getClothingItems(
             onSuccess = { items ->
                 cachedWardrobe = items
                 _wardrobeItems.value = items
-                // Show suggestions immediately — pure local computation
                 generateSuggestions(items)
-                // Daily outfit in background — needs Firestore read/write
                 viewModelScope.launch {
                     generateDailyOutfit(items)
                     _aiLoading.value = false
@@ -130,8 +120,10 @@ class FitCreatorViewModel : ViewModel() {
     }
 
     private fun generateSuggestions(items: List<ClothingItemUi>) {
+        // Shufflen damit bei jedem Laden andere Reihenfolge
+        val shuffled = items.shuffled()
         _outfitSuggestions.value = AiEngine.generateOutfitSuggestions(
-            clothes = items,
+            clothes = shuffled,
             count = 5,
             season = SeasonEngine.currentSeason()
         )
@@ -140,11 +132,25 @@ class FitCreatorViewModel : ViewModel() {
     fun regenerateDailyOutfit() {
         viewModelScope.launch {
             _aiLoading.value = true
-            val result = dailyOutfitManager.regenerateTodayOutfit(_wardrobeItems.value)
+
+            val items = _wardrobeItems.value.ifEmpty {
+                cachedWardrobe ?: emptyList()
+            }
+
+            if (items.isEmpty()) {
+                _aiMessage.value = "Keine Kleidung gefunden"
+                _aiLoading.value = false
+                return@launch
+            }
+
+            val result = dailyOutfitManager.regenerateTodayOutfit(items)
             _dailyOutfit.value = when (result) {
                 is DailyOutfitResult.Generated     -> result.outfit
                 is DailyOutfitResult.AlreadyExists -> result.outfit
-                is DailyOutfitResult.Error         -> null
+                is DailyOutfitResult.Error         -> {
+                    _aiMessage.value = result.message
+                    null
+                }
             }
             _aiLoading.value = false
         }
@@ -157,7 +163,6 @@ class FitCreatorViewModel : ViewModel() {
         _errorMessage.value = null
     }
 
-    // ── Wardrobe actions ──────────────────────────────────────────────────────
     fun addItem(item: ClothingItemUi) {
         val currentItems = _selectedItems.value
         if (currentItems.any { it.category == item.category }) {
@@ -234,7 +239,6 @@ class FitCreatorViewModel : ViewModel() {
         }
     }
 
-    // ── Outfit management ─────────────────────────────────────────────────────
     fun loadMyOutfits() {
         _isLoading.value = true
         repository.getMyOutfits(
@@ -259,7 +263,6 @@ class FitCreatorViewModel : ViewModel() {
         )
     }
 
-    // ── Tag management ────────────────────────────────────────────────────────
     fun toggleNewOutfitTag(tagId: String) {
         val current = _selectedTagIds.value.toMutableList()
         if (tagId in current) current.remove(tagId) else current.add(tagId)
@@ -272,9 +275,7 @@ class FitCreatorViewModel : ViewModel() {
         _filterTagIds.value = current
     }
 
-    fun clearFilterTags() {
-        _filterTagIds.value = emptyList()
-    }
+    fun clearFilterTags() { _filterTagIds.value = emptyList() }
 
     fun clearSelection() {
         _selectedItems.value = emptyList()
@@ -282,7 +283,6 @@ class FitCreatorViewModel : ViewModel() {
         _errorMessage.value = null
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
     private fun hasConflictingCategory(
         currentItems: List<ClothingItemUi>,
         newItem: ClothingItemUi
