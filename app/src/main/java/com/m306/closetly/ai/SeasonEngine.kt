@@ -64,9 +64,9 @@ object SeasonEngine {
     }
 
     fun seasonTip(season: Season): String = when (season) {
-        Season.SPRING -> "Spring is here — light layers and fresh colors work best."
-        Season.SUMMER -> "Keep it light and bright — breathable fabrics and bold tones."
+        Season.SPRING -> "Spring is here - light layers and fresh colors work best."
+        Season.SUMMER -> "Keep it light and bright - breathable fabrics and bold tones."
         Season.AUTUMN -> "Autumn calls for earthy tones and layering with jackets."
-        Season.WINTER -> "Stay warm in style — dark tones and outerwear are key."
+        Season.WINTER -> "Stay warm in style - dark tones and outerwear are key."
     }
 }

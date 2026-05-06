@@ -3,6 +3,8 @@ package com.closetly.myapp.fitcreator.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -77,15 +79,16 @@ fun FitCreatorScreen() {
             )
         }
 
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.primary,
+            edgePadding = 0.dp
         ) {
-            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Erstellen") })
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Generator") })
-            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Vorschläge") })
-            Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Meine Outfits") })
+            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Create", maxLines = 1, softWrap = false) })
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Generator", maxLines = 1, softWrap = false) })
+            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Suggestions", maxLines = 1, softWrap = false) })
+            Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("My Outfits", maxLines = 1, softWrap = false) })
         }
 
         when (selectedTab) {
@@ -139,7 +142,8 @@ private fun GeneratorTab(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // ── Header mit Wetter ─────────────────────────────────────────────────
@@ -193,7 +197,7 @@ private fun GeneratorTab(
                     GeneratedOutfitCard(
                         outfit      = outfit,
                         label       = if (weatherInfo != null)
-                            "Outfit für heute (${weatherInfo!!.tempCelsius.toInt()}°C)"
+                            "Outfit for today (${weatherInfo!!.tempCelsius.toInt()}°C)"
                         else
                             "Outfit Generator",
                         onUseOutfit = { onUseOutfit(outfit) }
@@ -209,7 +213,7 @@ private fun GeneratorTab(
                         color = MaterialTheme.colorScheme.surface
                     ) {
                         Text(
-                            text = aiMessage ?: "Füge mindestens ein Oberteil, eine Hose und Schuhe hinzu.",
+                            text = aiMessage ?: "Add at least one top, one pair of pants, and shoes.",
                             modifier = Modifier.padding(18.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -227,7 +231,7 @@ private fun GeneratorTab(
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Neues Outfit generieren")
+                    Text("Generate new outfit")
                 }
             }
         }
@@ -247,7 +251,8 @@ private fun SuggestionsTab(
     val season      = remember { SeasonEngine.currentSeason() }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
@@ -258,12 +263,12 @@ private fun SuggestionsTab(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "KI-Vorschläge für ${season.displayName()}",
+                        text = "AI suggestions for ${season.displayName()}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Basierend auf deiner Garderobe und der aktuellen Saison.",
+                        text = "Based on your wardrobe and the current season.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                     )
@@ -297,7 +302,7 @@ private fun SuggestionsTab(
                         color = MaterialTheme.colorScheme.surface
                     ) {
                         Text(
-                            text = "Keine Vorschläge verfügbar. Füge mehr Kleidung hinzu.",
+                            text = "No suggestions available. Add more clothes first.",
                             modifier = Modifier.padding(18.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -309,7 +314,7 @@ private fun SuggestionsTab(
                     val outfit = suggestions[index]
                     GeneratedOutfitCard(
                         outfit      = outfit,
-                        label       = "Vorschlag ${index + 1}",
+                        label       = "Suggestion ${index + 1}",
                         onUseOutfit = { onUseOutfit(outfit) }
                     )
                 }
@@ -393,7 +398,7 @@ private fun GeneratedOutfitCard(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Im Outfit-Creator verwenden")
+                Text("Use in Outfit Creator")
             }
         }
     }
@@ -452,7 +457,7 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
 
     LazyColumn(
         modifier        = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        contentPadding  = PaddingValues(16.dp),
+        contentPadding  = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
@@ -467,11 +472,11 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
             item {
                 if (!viewModel.validateOutfit()) {
                     Surface(modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large), color = MaterialTheme.colorScheme.errorContainer) {
-                        Text(text = "Wähle mindestens ein Oberteil und eine Hose aus.", modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(text = "Select at least one top and one pair of pants.", modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
                     }
                 } else {
                     Button(onClick = { showSaveDialog = true }, modifier = Modifier.fillMaxWidth().height(48.dp), shape = MaterialTheme.shapes.large) {
-                        Text("Outfit speichern")
+                        Text("Save outfit")
                     }
                 }
             }
@@ -485,7 +490,7 @@ private fun CreateOutfitTab(viewModel: FitCreatorViewModel, closetRepository: Cl
             }
         }
 
-        item { Text("Kleidung auswählen", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold) }
+        item { Text("Select clothes", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold) }
 
         if (isLoadingItems) {
             item {
@@ -535,11 +540,11 @@ private fun OutfitPreviewCard(selectedItems: List<ClothingItemUi>, onRemove: (Cl
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text("Outfit erstellen", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("${selectedItems.size} Teile ausgewählt", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Create outfit", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("${selectedItems.size} items selected", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (selectedItems.isNotEmpty()) {
-                    Button(onClick = onClear, shape = MaterialTheme.shapes.large, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Leeren") }
+                    Button(onClick = onClear, shape = MaterialTheme.shapes.large, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)) { Text("Clear") }
                 }
             }
             Box(
@@ -551,7 +556,7 @@ private fun OutfitPreviewCard(selectedItems: List<ClothingItemUi>, onRemove: (Cl
                 contentAlignment = Alignment.Center
             ) {
                 if (selectedItems.isEmpty()) {
-                    Text("Tippe unten auf Kleidungsstücke, um dein Outfit zu bauen.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(18.dp))
+                    Text("Tap clothes below to build your outfit.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(18.dp))
                 } else {
                     LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp), userScrollEnabled = false) {
                         items(selectedItems.take(6)) { item -> SelectedItemCard(item = item, onRemove = { onRemove(item) }) }
@@ -572,7 +577,7 @@ private fun CategoryChip(label: String, isSelected: Boolean, onClick: () -> Unit
 @Composable
 private fun EmptyClosetHint() {
     Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
-        Text(text = "Noch keine passenden Kleidungsstücke gefunden. Füge zuerst Kleidung im Schrank hinzu.", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = "No matching clothes found yet. Add clothes to your closet first.", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -589,15 +594,19 @@ private fun MyOutfitsTab(viewModel: FitCreatorViewModel) {
         return
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         item { FitTagSelector(selectedTagIds = filterTagIds, onTagToggle = { viewModel.toggleFilterTag(it) }) }
         if (filterTagIds.isNotEmpty()) {
-            item { OutlinedButton(onClick = { viewModel.clearFilterTags() }) { Text("Filter zurücksetzen") } }
+            item { OutlinedButton(onClick = { viewModel.clearFilterTags() }) { Text("Reset filters") } }
         }
         if (outfits.isEmpty()) {
             item {
                 Text(
-                    text = if (filterTagIds.isNotEmpty()) "Keine Outfits für die ausgewählten Tags." else "Du hast noch keine Outfits erstellt.",
+                    text = if (filterTagIds.isNotEmpty()) "No outfits for the selected tags." else "You have not created any outfits yet.",
                     modifier = Modifier.padding(24.dp),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -678,12 +687,12 @@ private fun FitTagSelector(selectedTagIds: List<String>, onTagToggle: (String) -
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text("Tags", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(text = if (selectedTagIds.isEmpty()) "Optional, hilft beim Filtern" else "${selectedTagIds.size} ausgewählt", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = if (selectedTagIds.isEmpty()) "Optional, helps with filtering" else "${selectedTagIds.size} selected", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            FitTagGroup(label = "Saison", tags = PredefinedTags.SEASON, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
-            FitTagGroup(label = "Anlass", tags = PredefinedTags.OCCASION, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
-            FitTagGroup(label = "Stil", tags = PredefinedTags.STYLE, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+            FitTagGroup(label = "Season", tags = PredefinedTags.SEASON, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+            FitTagGroup(label = "Occasion", tags = PredefinedTags.OCCASION, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+            FitTagGroup(label = "Style", tags = PredefinedTags.STYLE, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
         }
     }
 }
@@ -709,19 +718,33 @@ private fun FitTagPill(label: String, selected: Boolean, onClick: () -> Unit) {
 private fun SaveOutfitDialog(caption: String, isPublic: Boolean, isLoading: Boolean, selectedTagIds: List<String>, onCaptionChange: (String) -> Unit, onPublicChange: (Boolean) -> Unit, onTagToggle: (String) -> Unit, onSave: () -> Unit, onDismiss: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f)).clickable { onDismiss() }, color = MaterialTheme.colorScheme.background) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Card(modifier = Modifier.padding(16.dp).clickable(enabled = false) {}, shape = MaterialTheme.shapes.extraLarge, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                Column(modifier = Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Outfit speichern", style = MaterialTheme.typography.headlineSmall)
-                    TextField(value = caption, onValueChange = onCaptionChange, label = { Text("Name oder Beschreibung") }, modifier = Modifier.fillMaxWidth())
+            Card(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.92f)
+                    .clickable(enabled = false) {},
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Save outfit", style = MaterialTheme.typography.headlineSmall)
+                    TextField(value = caption, onValueChange = onCaptionChange, label = { Text("Name or description") }, modifier = Modifier.fillMaxWidth())
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Öffentlich teilen")
+                        Text("Share publicly")
                         Switch(checked = isPublic, onCheckedChange = onPublicChange)
                     }
                     FitTagSelector(selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onDismiss, modifier = Modifier.weight(1f).height(40.dp), enabled = !isLoading, shape = MaterialTheme.shapes.large) { Text("Abbrechen") }
+                        Button(onClick = onDismiss, modifier = Modifier.weight(1f).height(40.dp), enabled = !isLoading, shape = MaterialTheme.shapes.large) { Text("Cancel") }
                         Button(onClick = onSave, modifier = Modifier.weight(1f).height(40.dp), enabled = !isLoading, shape = MaterialTheme.shapes.large) {
-                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp)) else Text("Speichern")
+                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp)) else Text("Save")
                         }
                     }
                 }

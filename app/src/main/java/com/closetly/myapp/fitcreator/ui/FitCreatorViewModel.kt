@@ -121,6 +121,7 @@ class FitCreatorViewModel : ViewModel() {
     }
 
     private suspend fun generateDailyOutfit(items: List<ClothingItemUi>) {
+        android.util.Log.d("OOTD", "Jackets in wardrobe: ${items.filter { it.category.lowercase() == "jacket" }}")
         val result = dailyOutfitManager.generateTodayOutfit(items)
         _dailyOutfit.value = when (result) {
             is DailyOutfitResult.Generated     -> result.outfit
@@ -190,7 +191,7 @@ class FitCreatorViewModel : ViewModel() {
             }
 
             if (items.isEmpty()) {
-                _aiMessage.value = "Keine Kleidung gefunden"
+                _aiMessage.value = "No clothes found"
                 _aiLoading.value = false
                 return@launch
             }
@@ -219,7 +220,7 @@ class FitCreatorViewModel : ViewModel() {
     fun addItem(item: ClothingItemUi) {
         val currentItems = _selectedItems.value
         if (currentItems.any { it.category == item.category }) {
-            _errorMessage.value = "Sie können nur ein Item pro Kategorie auswählen"
+            _errorMessage.value = "You can only select one item per category"
             return
         }
         if (hasConflictingCategory(currentItems, item)) {

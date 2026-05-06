@@ -1,5 +1,6 @@
 package com.closetly.myapp.closet.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -42,6 +44,8 @@ import com.closetly.myapp.closet.func.getColorFromName
 import com.closetly.myapp.closet.model.ClothingItemUi
 import com.closetly.myapp.tags.model.PredefinedTags
 import com.m306.closetly.ai.ShoppingEngine
+import java.io.File
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod")
@@ -60,6 +64,8 @@ fun ClosetScreen() {
     val selectedSize by viewModel.selectedSize.collectAsState()
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var category by remember { mutableStateOf("") }
     var color by remember { mutableStateOf("") }
     var brand by remember { mutableStateOf("") }
@@ -87,7 +93,9 @@ fun ClosetScreen() {
 
     LaunchedEffect(shoppingRecommendation) {
         if (shoppingRecommendation != null) {
-            showShoppingPopup = true
+            if (Random.nextInt(100) < 20) {
+                showShoppingPopup = true
+            }
         }
     }
 
@@ -156,13 +164,43 @@ fun ClosetScreen() {
     // ─────────────────────────────────────────────────────────────────────────
 
     val categoryOptions = listOf("Jacket", "Pants", "Pullover", "Shirt", "Shoes", "Watch")
-    val colorOptions = listOf("Black", "White", "Blue", "Red", "Green", "Gray", "Beige", "Yellow", "Orange", "Violet", "Purple")
+    val colorOptions = listOf("Black", "White", "Blue", "Red", "Green", "Gray", "Beige", "Yellow", "Orange", "Violet", "Purple", "Other")
     val brandOptions = listOf("No Brand", "Nike", "Adidas", "Zara", "H&M", "Puma", "Levi's", "Ralph Lauren", "Jack&Jones", "Louis Vuitton", "Gucci", "Prada")
     val sizeOptions = listOf("XS", "S", "M", "L", "XL", "XXL")
 
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
     ) { uri -> selectedImageUri = uri }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && cameraImageUri != null) {
+            selectedImageUri = cameraImageUri
+        }
+    }
+
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Add clothing") },
+            text = { Text("Choose an image from your gallery or take a new photo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    imagePickerLauncher.launch("image/*")
+                }) { Text("Gallery") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    val newImageUri = createClothingImageUri(context)
+                    cameraImageUri = newImageUri
+                    cameraLauncher.launch(newImageUri)
+                }) { Text("Camera") }
+            }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -231,7 +269,7 @@ fun ClosetScreen() {
                         )
                     }
                     Button(
-                        onClick = { launcher.launch("image/*") },
+                        onClick = { showImageSourceDialog = true },
                         shape = MaterialTheme.shapes.large
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -761,6 +799,15 @@ fun ClothingItemCard(item: ClothingItemUi, onEdit: () -> Unit, onDelete: () -> U
             }
         }
     }
+}
+
+private fun createClothingImageUri(context: Context): Uri {
+    val imageFile = File.createTempFile(
+        "clothing_photo_${System.currentTimeMillis()}",
+        ".jpg",
+        context.cacheDir
+    )
+    return FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

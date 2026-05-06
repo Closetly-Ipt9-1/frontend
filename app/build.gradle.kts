@@ -24,8 +24,8 @@ android {
         applicationId = "com.closetly.myapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.2.1"
+        versionCode = 8
+        versionName = "1.3.0"
 
         val rembgApiKey = project.findProperty("RMBG_API_KEY") as String? ?: ""
         buildConfigField("String", "RMBG_API_KEY", "\"$rembgApiKey\"")
@@ -86,6 +86,7 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")

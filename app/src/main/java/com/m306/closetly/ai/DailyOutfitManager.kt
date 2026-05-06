@@ -149,10 +149,12 @@ class DailyOutfitManager {
             "bottomId"     to outfit.bottom.id,
             "jacketId"     to (outfit.jacket?.id ?: ""),
             "shoesId"      to (outfit.shoes?.id ?: ""),
+            "watchId"      to (outfit.watch?.id ?: ""),  // ← new
             "topData"      to outfit.top.toMap(),
             "bottomData"   to outfit.bottom.toMap(),
             "jacketData"   to (outfit.jacket?.toMap() ?: emptyMap<String, Any>()),
             "shoesData"    to (outfit.shoes?.toMap() ?: emptyMap<String, Any>()),
+            "watchData"    to (outfit.watch?.toMap() ?: emptyMap<String, Any>()),  // ← new
             "description"  to AiEngine.describeOutfit(outfit),
             "generatedAt"  to System.currentTimeMillis(),
             "rotationIndex" to 0
@@ -181,12 +183,14 @@ class DailyOutfitManager {
             val bottomData = doc.get("bottomData") as? Map<*, *> ?: return null
             val jacketData = doc.get("jacketData") as? Map<*, *>
             val shoesData  = doc.get("shoesData")  as? Map<*, *>
+            val watchData  = doc.get("watchData")  as? Map<*, *>  // ← new
 
             GeneratedOutfit(
                 top    = topData.toClothingItemUi(),
                 bottom = bottomData.toClothingItemUi(),
                 jacket = jacketData?.takeIf { it["id"] != "" }?.toClothingItemUi(),
                 shoes  = shoesData?.takeIf  { it["id"] != "" }?.toClothingItemUi(),
+                watch  = watchData?.takeIf  { it["id"] != "" }?.toClothingItemUi(),  // ← new
                 score  = (doc.getLong("score") ?: 0).toInt()
             )
         } catch (e: Exception) {

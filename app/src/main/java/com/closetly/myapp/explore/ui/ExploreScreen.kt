@@ -252,7 +252,7 @@ fun ExploreScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
-                    Text(text = errorText ?: "Etwas ist schiefgelaufen", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyLarge)
+                    Text(text = errorText ?: "Something went wrong", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -266,7 +266,7 @@ fun ExploreScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
-                    Text(text = "Noch keine öffentlichen Outfits", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyLarge)
+                    Text(text = "No public outfits yet", modifier = Modifier.padding(18.dp), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -349,7 +349,7 @@ fun ExploreScreen(
 @Composable
 private fun OotdCard(outfit: GeneratedOutfit) {
     val season = remember { SeasonEngine.currentSeason() }
-    val items = listOfNotNull(outfit.top, outfit.bottom, outfit.jacket, outfit.shoes)
+    val items = listOfNotNull(outfit.top, outfit.bottom, outfit.jacket, outfit.shoes, outfit.watch)
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -403,7 +403,12 @@ private fun OotdCard(outfit: GeneratedOutfit) {
             )
 
             if (items.isNotEmpty()) {
-                val gridHeight = if (items.size > 2) 200.dp else 100.dp
+                val gridHeight = when {
+                    items.size <= 2 -> 100.dp
+                    items.size == 3 -> 300.dp
+                    items.size == 4 -> 200.dp
+                    else            -> 300.dp
+                }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier
@@ -689,10 +694,10 @@ private fun ExploreHeader(
                 }
 
                 if (filterExpanded) {
-                    ExploreFilterChip(label = "Alle", selected = selectedTagIds.isEmpty(), onClick = onClearTags)
-                    ExploreTagRow(label = "Saison", tags = PredefinedTags.SEASON, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
-                    ExploreTagRow(label = "Anlass", tags = PredefinedTags.OCCASION, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
-                    ExploreTagRow(label = "Stil", tags = PredefinedTags.STYLE, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+                    ExploreFilterChip(label = "All", selected = selectedTagIds.isEmpty(), onClick = onClearTags)
+                    ExploreTagRow(label = "Season", tags = PredefinedTags.SEASON, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+                    ExploreTagRow(label = "Occasion", tags = PredefinedTags.OCCASION, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
+                    ExploreTagRow(label = "Style", tags = PredefinedTags.STYLE, selectedTagIds = selectedTagIds, onTagToggle = onTagToggle)
                 }
             }
         }
@@ -783,7 +788,7 @@ fun ExploreOutfitCard(
                 }
                 Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                     Text(text = outfit.username, style = MaterialTheme.typography.titleMedium)
-                    Text(text = if (outfit.isPublic) "Öffentlicher Look" else "Privater Look", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = if (outfit.isPublic) "Public look" else "Private look", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
                     Text(text = "Community", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
@@ -857,7 +862,7 @@ fun ExploreOutfitCard(
             if (commentsExpanded) {
                 Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 18.dp)) {
                     if (comments.isEmpty()) {
-                        Text(text = "Noch keine Kommentare. Sei der Erste!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
+                        Text(text = "No comments yet. Be the first!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
                     } else {
                         val visibleComments = if (showAllComments) comments else comments.take(5)
                         visibleComments.forEach { comment ->

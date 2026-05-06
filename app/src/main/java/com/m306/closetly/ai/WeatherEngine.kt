@@ -13,7 +13,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import kotlin.coroutines.resume
 
-private const val OPENWEATHER_API_KEY = com.closetly.myapp.BuildConfig.OPENWEATHER_API_KEY
+private const val OPENWEATHER_API_KEY = "5ab318c9cb4867fc413e7963cbc0d962"
 data class WeatherInfo(
     val tempCelsius: Double,
     val description: String,
@@ -28,9 +28,9 @@ enum class TempRange {
     HOT;
 
     fun displayName(): String = when (this) {
-        FREEZING -> "Sehr kalt"
-        COLD     -> "Kalt"
-        COOL     -> "Kühl"
+        FREEZING -> "Freezing"
+        COLD     -> "Cold"
+        COOL     -> "Cool"
         MILD     -> "Mild"
         HOT      -> "Warm"
     }
@@ -82,8 +82,6 @@ object WeatherEngine {
                 val response = client.newCall(request).execute()
                 val body     = response.body?.string() ?: return@withContext null
 
-                android.util.Log.d("WEATHER_GEN", "Response code: ${response.code}")
-                android.util.Log.d("WEATHER_GEN", "Response body: $body")
 
                 val json        = JSONObject(body)
                 val temp        = json.getJSONObject("main").getDouble("temp")
@@ -123,7 +121,7 @@ object WeatherEngine {
                 allowsShirt   = false,
                 needsShoes    = true,
                 allowsWatch   = true,
-                tip           = "Sehr kalt — Jacke und Pullover sind ein Muss."
+                tip           = "Freezing - a jacket and pullover are essential."
             )
             TempRange.COLD -> WeatherOutfitRules(
                 needsJacket   = true,
@@ -131,7 +129,7 @@ object WeatherEngine {
                 allowsShirt   = false,
                 needsShoes    = true,
                 allowsWatch   = true,
-                tip           = "Kalt — Jacke nicht vergessen."
+                tip           = "Cold - do not forget a jacket."
             )
             TempRange.COOL -> WeatherOutfitRules(
                 needsJacket   = season == Season.AUTUMN || season == Season.WINTER,
@@ -139,7 +137,7 @@ object WeatherEngine {
                 allowsShirt   = false,
                 needsShoes    = true,
                 allowsWatch   = true,
-                tip           = "Kühl — ein Pullover reicht meistens."
+                tip           = "Cool - a pullover is usually enough."
             )
             TempRange.MILD -> WeatherOutfitRules(
                 needsJacket   = false,
@@ -147,7 +145,7 @@ object WeatherEngine {
                 allowsShirt   = true,
                 needsShoes    = true,
                 allowsWatch   = true,
-                tip           = "Angenehm mild — Shirt oder leichter Pullover."
+                tip           = "Pleasantly mild - a shirt or light pullover works well."
             )
             TempRange.HOT -> WeatherOutfitRules(
                 needsJacket   = false,
@@ -155,7 +153,7 @@ object WeatherEngine {
                 allowsShirt   = true,
                 needsShoes    = true,
                 allowsWatch   = true,
-                tip           = "Warm — leichte Kleidung empfohlen."
+                tip           = "Warm - light clothes are recommended."
             )
         }
     }

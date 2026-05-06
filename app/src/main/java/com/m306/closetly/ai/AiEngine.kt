@@ -64,7 +64,8 @@ object AiEngine {
         val jackets = clothes.filter { normalizeCategory(it.category) == "jacket" }
         val shoes   = clothes.filter { normalizeCategory(it.category) == "shoes" }
         val watches = clothes.filter { normalizeCategory(it.category) == "watch" }
-
+        android.util.Log.d("OOTD", "Season: $season")
+        android.util.Log.d("OOTD", "Tops: ${tops.size}, Bottoms: ${bottoms.size}, Jackets: ${jackets.size}, Shoes: ${shoes.size}")
         if (tops.isEmpty() || bottoms.isEmpty()) return null
 
         val includeJacket = season == Season.WINTER || season == Season.AUTUMN
